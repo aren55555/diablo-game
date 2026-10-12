@@ -1,5 +1,6 @@
 module Render exposing
     ( Draw
+    , characterSelect
     , encode
     , gameOver
     , interlude
@@ -290,6 +291,7 @@ world paused w =
     background w.level.theme w.level.n w.camY w.time
         ++ weather w.level.theme.fx w.time
         ++ List.concatMap (platform w sx sy) (List.filter (\p -> visible p.y p.h) w.level.platforms)
+        ++ safetyNet w sy
         ++ List.concatMap (zone sx sy) w.zones
         ++ List.concatMap (item w.time sx sy) (List.filter (\i -> visible i.y 8) w.items)
         ++ List.concatMap (enemy sx sy) (List.filter (\e -> e.active && not e.dead) w.enemies)
@@ -310,11 +312,16 @@ world paused w =
         ++ List.concatMap (particleDraw sx sy) (List.reverse w.particles)
         ++ List.concatMap (\wr -> [ Spr "warn" wr.x 22 TopLeft False (modBy 8 w.tick < 4) 1 ]) w.warnings
         ++ hud w
-        ++ bannerDraw w.banner
+        ++ (if paused then
+                []
+
+            else
+                bannerDraw w.banner
+           )
         ++ (if paused then
                 [ Alpha 0.6, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
                     ++ label "PAUSED" (gameW / 2) 100 "#fcfcfc" Mid 2
-                    ++ label "PRESS P OR ESC TO KEEP CLIMBING" (gameW / 2) 124 "#bcbcc4" Mid 1
+                    ++ label "PRESS ~ (OR P) TO KEEP CLIMBING" (gameW / 2) 124 "#bcbcc4" Mid 1
                     ++ label "M = MUTE" (gameW / 2) 136 "#bcbcc4" Mid 1
 
             else
@@ -729,7 +736,9 @@ player w sx sy p =
             hpBar =
                 [ Rect (cx - 6) (bottom - 21) 12 3 "#101018"
                 , Rect (cx - 5) (bottom - 20) (10 * p.hp / 100) 1 (hpColor p.hp)
-                , Rect (cx - 1) (bottom - 24) 3 2 def.color
+                , Rect (cx - 2) (bottom - 26) 5 1 def.color
+                , Rect (cx - 1) (bottom - 25) 3 1 def.color
+                , Rect cx (bottom - 24) 1 1 def.color
                 ]
 
             prompt =
@@ -746,7 +755,7 @@ player w sx sy p =
                 else
                     []
         in
-        slash ++ [ Spr (prefix ++ pose) cx (bottom + 1) BottomCenter flip (p.hurtFx > 0) 1, weapon ] ++ frozen ++ hpBar ++ prompt
+        slash ++ [ Spr (Data.spriteFor p) cx (bottom + 1) BottomCenter flip (p.hurtFx > 0) 1, weapon ] ++ frozen ++ hpBar ++ prompt
 
 
 hpColor : Float -> String
@@ -835,6 +844,9 @@ projectile w sx sy p =
                 DiamondP ->
                     spr "i_diamond"
 
+                BitcoinP ->
+                    spr "x_btc"
+
                 Wave ->
                     spr "x_wave"
            )
@@ -858,6 +870,9 @@ particleDraw sx sy p =
 
         Txt s ->
             label s (sx p.x) (sy p.y) p.color Mid 1
+
+        Img id flip ->
+            [ Alpha (min 1 (k * 2.5)), Spr id (sx p.x) (sy p.y) Center flip False 1, Alpha 1 ]
 
 
 
@@ -1032,6 +1047,7 @@ title time joined startLevel =
         ++ label "A 4-PLAYER CLIMBING ADVENTURE" 26 86 "#fcfcfc" Left 1
         ++ label "UP = JUMP (TAP TWICE TO DOUBLE JUMP)" 26 100 "#bcbcc4" Left 1
         ++ label "DOWN = ATTACK / GRAB WEAPON" 26 110 "#bcbcc4" Left 1
+        ++ label "~ = PAUSE    M = MUTE" 26 120 "#7c7c84" Left 1
         ++ List.concat (List.indexedMap slot joined)
         ++ label
             (if startLevel == 1 then
@@ -1068,8 +1084,8 @@ story time =
         lines =
             [ ( "THE EVIL KING IS GREEDY, OLD, FAT AND", "#fcfcfc" )
             , ( "VERY, VERY ORANGE.", "#fc9838" )
-            , ( "HE STOLE ALL THE GOLD AND DIAMONDS", "#fcfcfc" )
-            , ( "IN THE LAND - AND HE WON'T SHARE!", "#fcfcfc" )
+            , ( "HE STOLE ALL THE GOLD, DIAMONDS AND", "#fcfcfc" )
+            , ( "BITCOIN IN THE LAND - AND WON'T SHARE!", "#fcfcfc" )
             , ( "", "#fff" )
             , ( "HIS TREASURE IS HIDDEN ON TOP OF", "#fcfcfc" )
             , ( "MOUNT DIABLO, GUARDED BY A DRAGON.", "#fc3c3c" )
@@ -1104,7 +1120,7 @@ playerStats players y =
                 in
                 [ Rect x y 84 46 "#101018"
                 , Rect x y 84 2 def.color
-                , Spr ("p" ++ String.fromInt p.idx ++ "_idle") (x + 12) (y + 26) BottomCenter False False 1
+                , Spr ("c_" ++ (Data.characterInfo p.character).key ++ "_idle") (x + 12) (y + 26) BottomCenter False False 1
                 , Text def.name (x + 24) (y + 6) def.color Left 1
                 , Spr "i_coin_0" (x + 24) (y + 16) TopLeft False False 1
                 , Text (String.fromInt p.gold) (x + 34) (y + 17) "#fcd000" Left 1
@@ -1241,3 +1257,150 @@ victory time players =
             else
                 []
            )
+
+
+{-| Draw a 1px rectangle outline.
+-}
+outlineBox : Float -> Float -> Float -> Float -> String -> List Draw
+outlineBox x y w h c =
+    [ Rect x y w 1 c, Rect x (y + h - 1) w 1 c, Rect x y 1 h c, Rect (x + w - 1) y 1 h c ]
+
+
+characterSelect : Float -> List Bool -> List Int -> List Bool -> List Draw
+characterSelect time joined picks ready =
+    let
+        chars =
+            Data.characters
+
+        iconX i =
+            toFloat i * 31 + 22
+
+        strip =
+            List.concat
+                (List.indexedMap
+                    (\i c ->
+                        [ Rect (iconX i - 13) 30 26 26 "#101018"
+                        , Spr ("c_" ++ (Data.characterInfo c).key ++ "_idle") (iconX i) 53 BottomCenter False False 1
+                        ]
+                    )
+                    chars
+                )
+
+        cursors =
+            List.concat
+                (List.indexedMap
+                    (\i ( on, pick ) ->
+                        if on then
+                            let
+                                o =
+                                    toFloat i
+                            in
+                            outlineBox (iconX pick - 14 - o) (29 - o) (28 + 2 * o) (28 + 2 * o) (Data.playerDef i).color
+
+                        else
+                            []
+                    )
+                    (List.map2 Tuple.pair joined picks)
+                )
+
+        panel i ( ( on, pick ), isReady ) =
+            let
+                def =
+                    Data.playerDef i
+
+                x =
+                    toFloat i * 92 + 18
+
+                y =
+                    66
+
+                c =
+                    Data.characterAt pick
+
+                info =
+                    Data.characterInfo c
+
+                pose =
+                    if isReady then
+                        if modBy 2 (floor (time * 6)) == 0 then
+                            "walk1"
+
+                        else
+                            "walk2"
+
+                    else
+                        "idle"
+
+                hop =
+                    if isReady then
+                        toFloat (round (abs (sin (time * 6)) * -4))
+
+                    else
+                        0
+
+                blink =
+                    sin (time * 6) > -0.3
+            in
+            [ Rect x y 82 140 "#101018", Rect x y 82 2 def.color, Text def.name (x + 41) (y + 5) def.color Mid 1 ]
+                ++ (if on then
+                        [ Alpha 0.25
+                        , Circ (x + 41) (y + 70) 22 def.color True
+                        , Alpha 1
+                        , Spr ("c_" ++ info.key ++ "_" ++ pose) (x + 41) (y + 82 + hop) BottomCenter False False 3
+                        ]
+                            ++ (if not isReady && blink then
+                                    [ Text "<" (x + 5) (y + 54) "#fcfcfc" Left 1, Text ">" (x + 72) (y + 54) "#fcfcfc" Left 1 ]
+
+                                else
+                                    []
+                               )
+                            ++ label info.name (x + 41) (y + 90) "#fcfcfc" Mid 1
+                            ++ [ Text info.blurb (x + 41) (y + 102) "#7c7c84" Mid 1 ]
+                            ++ (if isReady then
+                                    label "READY!" (x + 41) (y + 116) "#58d854" Mid 1
+                                        ++ [ Text (def.jump ++ " = CHANGE") (x + 41) (y + 128) "#7c7c84" Mid 1 ]
+
+                                else
+                                    [ Text (def.atk ++ " = PICK") (x + 41) (y + 118) "#fcd000" Mid 1 ]
+                               )
+
+                    else
+                        [ Text "NOT" (x + 41) (y + 60) "#404048" Mid 1, Text "PLAYING" (x + 41) (y + 70) "#404048" Mid 1 ]
+                   )
+    in
+    background (Data.levelInfo 1).theme 1 -210 time
+        ++ [ Alpha 0.5, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
+        ++ label "CHOOSE YOUR CHARACTER!" (gameW / 2) 8 "#fcd000" Mid 2
+        ++ strip
+        ++ cursors
+        ++ List.concat (List.indexedMap panel (List.map2 Tuple.pair (List.map2 Tuple.pair joined picks) ready))
+        ++ label "LEFT / RIGHT = CHOOSE    DOWN = READY" (gameW / 2) 222 "#fcfcfc" Mid 1
+
+
+{-| A rope net along the bottom of the screen once the ground is out of view:
+players land on it instead of falling off-screen.
+-}
+safetyNet : World -> (Float -> Float) -> List Draw
+safetyNet w sy =
+    let
+        floorY =
+            World.screenFloor w
+
+        y =
+            sy floorY
+    in
+    if floorY >= 0 then
+        []
+
+    else
+        [ Alpha 0.55 ]
+            ++ List.concatMap
+                (\i ->
+                    let
+                        x =
+                            toFloat i * 8
+                    in
+                    [ Rect x y 8 1 "#fce4a0", Line x (y + 1) (x + 4) (y + 4) 1 "#a0582c", Line (x + 4) (y + 4) (x + 8) (y + 1) 1 "#a0582c" ]
+                )
+                (List.range 0 (ceiling (gameW / 8)))
+            ++ [ Alpha 1 ]

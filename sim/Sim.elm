@@ -5,6 +5,7 @@ Reports what happened so we can check every level is beatable.
 Used by `just sim`.
 -}
 
+import Data
 import Dict
 import Json.Encode as E
 import Make
@@ -17,7 +18,7 @@ port report : E.Value -> Cmd msg
 
 
 type alias Flags =
-    { level : Int, seconds : Int, players : Int, weapon : String, bossOnly : Bool }
+    { level : Int, seconds : Int, players : Int, weapon : String, bossOnly : Bool, arrive : Bool, fall : Bool }
 
 
 main : Program Flags () ()
@@ -130,6 +131,8 @@ bot w t p =
     , down = True
     , upP = jumpNow
     , downP = modBy 30 t == 0
+    , leftP = False
+    , rightP = False
     }
 
 
@@ -141,7 +144,7 @@ run flags =
                 (\i ->
                     let
                         p =
-                            Make.player i
+                            Make.player i (Data.characterAt (i * 3))
                     in
                     { p | weapon = weaponOf flags.weapon }
                 )
@@ -153,6 +156,22 @@ run flags =
         start =
             if flags.bossOnly then
                 World.skipToBoss fresh
+
+            else if flags.fall then
+                -- players drop from mid-screen with the ground far below the camera
+                { fresh
+                    | players = List.map (\p -> { p | y = -560, x = 4 + toFloat p.idx * 120, vy = 0, invuln = 0 }) fresh.players
+                    , camY = -700
+                    , enemies = []
+                }
+
+            else if flags.arrive then
+                -- everyone has just climbed onto the boss platform (still in the Climb
+                -- phase, camera where the climb camera would have it); they stand still
+                { fresh
+                    | players = List.map (\p -> { p | y = fresh.level.arenaY - 15, x = 30 + toFloat p.idx * 20, vy = 0 }) fresh.players
+                    , camY = fresh.level.arenaY - 140
+                }
 
             else
                 fresh
@@ -167,7 +186,15 @@ run flags =
             else
                 let
                     w2 =
-                        World.step (1 / 60) (\i -> List.filter (\p -> p.idx == i) w.players |> List.head |> Maybe.map (bot w t) |> Maybe.withDefault noPad) w
+                        World.step (1 / 60)
+                            (\i ->
+                                if flags.arrive || flags.fall then
+                                    noPad
+
+                                else
+                                    List.filter (\p -> p.idx == i) w.players |> List.head |> Maybe.map (bot w t) |> Maybe.withDefault noPad
+                            )
+                            w
 
                     bossT2 =
                         if bossT < 0 && (w2.phase == BossFight || isGather w2.phase) then
@@ -207,13 +234,14 @@ run flags =
         , ( "reachable", E.bool (reachable start.level) )
         , ( "feetAboveArena", E.list (\p -> E.int (round (final.level.arenaY - (p.y + 15)))) final.players )
         , ( "enemies", E.int (List.length final.enemies) )
+        , ( "onScreen", E.bool (List.all (\p -> p.y + 15 <= final.camY + 240) final.players) )
         , ( "damageBy", E.dict identity (\v -> E.int (round v)) damage )
         ]
 
 
 noPad : Pad
 noPad =
-    { left = False, right = False, up = False, down = False, upP = False, downP = False }
+    { left = False, right = False, up = False, down = False, upP = False, downP = False, leftP = False, rightP = False }
 
 
 phaseName : Phase -> String

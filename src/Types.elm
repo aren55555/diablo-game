@@ -23,11 +23,31 @@ type alias Pad =
     , down : Bool
     , upP : Bool
     , downP : Bool
+    , leftP : Bool
+    , rightP : Bool
     }
+
+
+{-| The playable characters. Each has its own sprite, voice and aura.
+-}
+type Character
+    = Goblin
+    | Fairy
+    | PopStar
+    | Dino
+    | TreeMan
+    | PieWoman
+    | BlackBerry
+    | BlockMan
+    | PoopyDiaper
+    | Ghosty
+    | BeerMan
+    | Spider
 
 
 type alias Player =
     { idx : Int
+    , character : Character
     , x : Float
     , y : Float
     , vx : Float
@@ -52,6 +72,8 @@ type alias Player =
     , anim : Float
     , ghostT : Float
     , prompt : Float
+    , auraT : Float
+    , voiceT : Float
     }
 
 
@@ -128,6 +150,7 @@ type ProjKind
     | Arrow
     | Bone
     | DiamondP
+    | BitcoinP
     | Wave
 
 
@@ -178,6 +201,7 @@ type PKind
     | Puff
     | Ring
     | Txt String
+    | Img String Bool
 
 
 type alias Particle =

@@ -1,8 +1,9 @@
-module World exposing (new, reviveTime, skipToBoss, step)
+module World exposing (new, reviveTime, screenFloor, skipToBoss, step)
 
 {-| The per-frame game simulation for one level.
 -}
 
+import Aura
 import Boss
 import Data
 import Fx exposing (..)
@@ -247,6 +248,7 @@ ghost dt p w =
         w
             |> mapPlayer p.idx (\_ -> { p | hp = 30, x = rx, y = ry, vx = 0, vy = -150, invuln = 2, ghostT = 0, onGround = False, standing = -1 })
             |> sfx "heart"
+            |> sfx (Aura.voice p)
             |> burst (rx + 5) (ry + 8) "#fcfcfc" 16 90 2
             |> floatText (rx + 5) (ry - 8) ("P" ++ String.fromInt (p.idx + 1) ++ " IS BACK!") "#58d854"
 
@@ -413,13 +415,23 @@ alive dt pad p0 w0 =
             else
                 moved
 
+        -- the bottom of the screen is a floor too: nobody falls out of view
+        floored =
+            if capped.vy >= 0 && capped.y + 15 > screenFloor w1 then
+                { capped | y = screenFloor w1 - 15, vy = 0, onGround = True, standing = -1, airJumps = 1 }
+
+            else
+                capped
+
         w2 =
             w1
-                |> mapPlayer p1.idx (\_ -> capped)
+                |> mapPlayer p1.idx (\_ -> floored)
                 |> jumpFx
                 |> triggerCrumble landing
     in
-    w2 |> grabOrAttack pad capped
+    w2
+        |> grabOrAttack pad floored
+        |> Aura.update dt pad.downP floored.idx
 
 
 triggerCrumble : Maybe Platform -> World -> World
@@ -760,7 +772,17 @@ updateCamera dt w =
             w.level
     in
     case w.phase of
-        Climb ->
+        BossFight ->
+            arenaView dt w
+
+        Cleared _ ->
+            arenaView dt w
+
+        AllKO _ ->
+            arenaView dt w
+
+        _ ->
+            -- Climb, Gather and BossIntro follow the group
             let
                 ps =
                     alivePlayers w
@@ -795,8 +817,26 @@ updateCamera dt w =
                 in
                 { w | camY = max lvl.arenaCamTop cam }
 
-        _ ->
-            { w | camY = lvl.arenaCamTop }
+
+{-| Glide the camera to frame the whole boss arena.
+-}
+arenaView : Float -> World -> World
+arenaView dt w =
+    let
+        top =
+            w.level.arenaCamTop
+
+        cam =
+            w.camY + (top - w.camY) * min 1 (dt * 4)
+    in
+    { w
+        | camY =
+            if abs (cam - top) < 0.5 then
+                top
+
+            else
+                cam
+    }
 
 
 {-| Players who fall off the bottom of the screen get put back near the group.
@@ -1297,6 +1337,10 @@ projStep dt p w =
                         DiamondP ->
                             pickup Diamond (p.x - 4) (p.y - 8) 0 -60 6 w
 
+                        -- stolen crypto lands as gold you can grab back
+                        BitcoinP ->
+                            pickup Coin (p.x - 4) (p.y - 8) 0 -60 6 w
+
                         _ ->
                             burst p.x p.y (projColor p.kind) 8 80 2 w
 
@@ -1610,7 +1654,7 @@ phaseLogic dt w =
     else
         case w1.phase of
             Climb ->
-                if w1.camY <= w1.level.arenaCamTop + 0.5 && List.any (\p -> p.standing == arenaId w1) ps then
+                if List.any (\p -> p.standing == arenaId w1) ps then
                     { w1 | phase = Gather 0, banner = Just { text = "BOSS PLATFORM!", sub = "EVERYBODY CLIMB UP!", t = 2, color = "#fcd000" } }
 
                 else
@@ -1728,6 +1772,7 @@ bossDefeated b w =
         |> killAll
         |> sfx "boom"
         |> sfx "clear"
+        |> (\acc -> List.foldl (\p a -> sfx (Aura.voice p) a) acc (alivePlayers acc))
         |> shake 10
         |> burst cx cy "#fc7c00" 30 160 4
         |> burst cx cy "#fcfc58" 20 120 3
@@ -1763,3 +1808,10 @@ skipToBoss w =
         , camY = w.level.arenaCamTop
         , phase = Gather 10
     }
+
+
+{-| The world y of the invisible floor along the bottom edge of the screen.
+-}
+screenFloor : World -> Float
+screenFloor w =
+    w.camY + gameH - 4

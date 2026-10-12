@@ -1,9 +1,13 @@
 // Headless smoke test: compiles sim/Sim.elm and lets bot players climb and
 // fight. Prints one line per level.
 // Usage: bun scripts/sim.ts [levels=1-11] [seconds=240] [players=4] [weapon=fists] [--boss]
-//   --boss  skip the climb and start each level at its boss fight
+//   --boss    skip the climb and start each level at its boss fight
+//   --arrive  players start standing on the boss platform (checks the boss wakes)
+//   --fall    players drop from mid-screen (checks they land on screen, unhurt)
 const args = process.argv.slice(2);
 const bossOnly = args.includes('--boss');
+const arrive = args.includes('--arrive');
+const fall = args.includes('--fall');
 const [levels = '1-11', seconds = '240', players = '4', weapon = 'fists'] = args.filter((a) => !a.startsWith('--'));
 
 const out = 'dist/sim.js';
@@ -25,7 +29,7 @@ for (let level = lo; level <= hi; level++) {
   new Function(code).call(scope);
   if (!scope.Elm) throw new Error('Elm did not load');
   const t0 = performance.now();
-  const app = scope.Elm.Sim.init({ flags: { level, seconds: Number(seconds), players: Number(players), weapon, bossOnly } });
+  const app = scope.Elm.Sim.init({ flags: { level, seconds: Number(seconds), players: Number(players), weapon, bossOnly, arrive, fall } });
   app.ports.report.subscribe((r) => {
     console.log(JSON.stringify(r), `${(performance.now() - t0).toFixed(0)}ms`);
   });

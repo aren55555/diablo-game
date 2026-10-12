@@ -95,6 +95,9 @@ projStats kind =
         DiamondP ->
             ( 4, 12, 0 )
 
+        BitcoinP ->
+            ( 4.5, 10, 0 )
+
         _ ->
             ( 3, 10, 0 )
 

@@ -1,12 +1,17 @@
 module Data exposing
-    ( PlayerDef
+    ( CharacterInfo
+    , PlayerDef
     , WeaponDef
     , bossDefs
     , bossFor
+    , characterAt
+    , characterInfo
+    , characters
     , kingTaunts
     , levelCount
     , levelInfo
     , playerDef
+    , spriteFor
     , weaponDef
     )
 
@@ -280,8 +285,8 @@ bossDefs =
         ( 52, 54 )
         28
         "b_king"
-        [ Shoot CoinP 7 0.8 172 False, Stomp, Summon Goon 3, Rain DiamondP 14, Radial DiamondP 12 128 ]
-        [ "MINE! ALL MINE!", "I DON'T SHARE!", "GET YOUR OWN GOLD!", "MY DIAMONDS!!", "SHARING IS FOR LOSERS!" ]
+        [ Shoot CoinP 7 0.8 172 False, Stomp, Summon Goon 3, Rain DiamondP 14, Rain BitcoinP 12, Radial DiamondP 12 128 ]
+        [ "MINE! ALL MINE!", "I DON'T SHARE!", "GET YOUR OWN GOLD!", "MY DIAMONDS!!", "SHARING IS FOR LOSERS!", "YOUR BITCOIN IS MY BITCOIN!", "HODL? I'LL HOLD IT FOR YOU!" ]
     , let
         b =
             boss "DIABLO"
@@ -313,8 +318,96 @@ kingTaunts =
     , "SHARING? NEVER HEARD OF IT!"
     , "EVERY COIN, EVERY DIAMOND... MINE MINE MINE!"
     , "I'M THE RICHEST, ORANGEST KING EVER!"
+    , "I TOOK EVERYONE'S CRYPTO. EVERY LAST BITCOIN!"
     , "MY GUARDS WILL STOP YOU! ...PROBABLY!"
     , "I'LL BUY A BIGGER CROWN WITH YOUR GOLD!"
     , "NOBODY GETS A SINGLE COIN. NOT EVEN MY MOM!"
     , "STOP CLIMBING MY MOUNTAIN! I PAID FOR IT!"
     ]
+
+
+
+-- CHARACTERS -------------------------------------------------------------------
+
+
+type alias CharacterInfo =
+    { name : String
+    , key : String
+    , blurb : String
+    }
+
+
+{-| In the order they appear on the character select screen.
+-}
+characters : List Character
+characters =
+    [ Goblin, Fairy, PopStar, Dino, TreeMan, PieWoman, BlackBerry, BlockMan, PoopyDiaper, Ghosty, BeerMan, Spider ]
+
+
+characterAt : Int -> Character
+characterAt i =
+    Maybe.withDefault Goblin (listGet (modBy (List.length characters) i) characters)
+
+
+{-| key names the sprites ("c\_<key>_<pose>") and the voice sound ("voice_<key>").
+-}
+characterInfo : Character -> CharacterInfo
+characterInfo c =
+    case c of
+        Goblin ->
+            CharacterInfo "GOBLIN" "goblin" "SNEAKY CACKLE"
+
+        Fairy ->
+            CharacterInfo "FAIRY" "fairy" "MAGIC SPARKLE"
+
+        PopStar ->
+            CharacterInfo "POP STAR" "popstar" "SINGS A TUNE"
+
+        Dino ->
+            CharacterInfo "DINO" "dino" "BIG ROARS"
+
+        TreeMan ->
+            CharacterInfo "TREE MAN" "tree" "CREAK CREAK"
+
+        PieWoman ->
+            CharacterInfo "PIE WOMAN" "pie" "SPLAT!"
+
+        BlackBerry ->
+            CharacterInfo "BLACKBERRY" "dog" "WOOF WOOF!"
+
+        BlockMan ->
+            CharacterInfo "BLOCK MAN" "block" "BONK BONK!"
+
+        PoopyDiaper ->
+            CharacterInfo "POOPY DIAPER" "poopy" "PFFFFT!"
+
+        Ghosty ->
+            CharacterInfo "GHOST" "ghost" "OOOOOOH!"
+
+        BeerMan ->
+            CharacterInfo "BEER MAN" "beer" "BUUURP!"
+
+        Spider ->
+            CharacterInfo "SPIDER" "spider" "WEB SLINGER"
+
+
+{-| The sprite to draw for a player this frame.
+-}
+spriteFor : Player -> String
+spriteFor p =
+    let
+        pose =
+            if not p.onGround then
+                "jump"
+
+            else if abs p.vx > 10 then
+                if modBy 2 (floor (p.anim * 8)) == 0 then
+                    "walk1"
+
+                else
+                    "walk2"
+
+            else
+                "idle"
+    in
+    "c_" ++ (characterInfo p.character).key ++ "_" ++ pose

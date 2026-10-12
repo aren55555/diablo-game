@@ -7,9 +7,10 @@ import Types exposing (..)
 import Util exposing (gameW)
 
 
-player : Int -> Player
-player idx =
+player : Int -> Character -> Player
+player idx character =
     { idx = idx
+    , character = character
     , x = 0
     , y = 0
     , vx = 0
@@ -34,6 +35,8 @@ player idx =
     , anim = 0
     , ghostT = 0
     , prompt = 0
+    , auraT = 0
+    , voiceT = 0
     }
 
 

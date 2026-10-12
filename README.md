@@ -3,7 +3,7 @@
 A 4-player local co-op climbing game with a retro 8-bit look. Climb 10 levels
 of Mount Diablo together, beat a mini boss on each level's top platform, then
 face **Diablo**, the dragon at the summit, and take back the gold the greedy,
-orange Evil King stole.
+orange Evil King stole, along with everyone's diamonds and Bitcoin.
 
 ## Controls
 
@@ -21,18 +21,26 @@ Gamepads also work: pad 1 controls P1, pad 2 controls P2, and so on. Use the
 d-pad or stick to move, A to jump, and B or X to attack.
 
 - **Title screen:** press your jump key to join (your down key leaves).
-  Press `Enter` to start. Number keys pick a starting level (`0` = level 10,
-  `-` = the summit).
-- **In game:** `P` / `Esc` pauses, `M` mutes.
+  Press `Enter` when everyone's in. Number keys pick a starting level
+  (`0` = level 10, `-` = the summit).
+- **Character select:** press left or right to browse, down to lock in, and
+  up to change your mind. The game starts once everyone is ready.
+- **In game:** `~` pauses (so do `P` and `Esc`), and `M` mutes.
 
 Many keyboards can't register lots of keys held at once, so with four players
 on one keyboard some combinations may drop. Gamepads avoid that.
 
 ## How it plays
 
+- Pick from 12 characters: Goblin, Fairy, Pop Star, Dino, Tree Man, Pie
+  Woman, BlackBerry the dog, Block Man, Poopy Diaper, Ghost, Beer Man and
+  Spider. Each one has its own sound, which plays when you attack, revive or
+  win. Each also leaves its own aura: sparkles, music notes, footprints,
+  falling leaves, pie splats, paw prints, blocks, stink lines and flies,
+  spooky afterimages, foam bubbles, or a trail of cobwebs.
 - Each player has 0-100 HP. While climbing you slowly heal, and hearts restore 25.
 - The top of the screen is a ceiling, so the group has to climb together.
-  Fall off the bottom and you're put back near your team (-10 HP).
+  The bottom of the screen has a safety net, so nobody can fall out of view.
 - Weapons are found along the climb, and you can carry one at a time:
   nunchucks, enchanted sword, machine gun, bazooka, super stinky fart bomb
   and laser blaster. Ranged weapons auto-aim a little.
@@ -70,6 +78,7 @@ testing.
   - `Boss.elm`: boss AI.
   - `Level.elm`: procedural levels.
   - `Sprites.elm` + `Pixel.elm`: pixel art drawn in code.
+  - `Aura.elm`: character auras and voices.
   - `Render.elm`: scene to draw commands.
 - `platform/` - **TypeScript** (strict): draws Elm's per-frame draw commands
   on a 384x240 canvas, renders the 5x7 bitmap font, synthesizes chiptune

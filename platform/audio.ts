@@ -197,6 +197,121 @@ export class Audio {
     this.noise(0.6, 0.05, 400, 150);
   }
 
+  // An oscillator whose pitch wobbles (LFO) and glides f0 -> f1, through a filter.
+  private wobble(
+    type: Wave,
+    f0: number,
+    f1: number,
+    dur: number,
+    lfoHz: number,
+    lfoDepth: number,
+    vol: number,
+    filter: BiquadFilterType = 'lowpass',
+    filterHz = 4000,
+    delay = 0,
+  ): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + delay;
+    const o = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lg = ctx.createGain();
+    const f = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    lfo.frequency.value = lfoHz;
+    lg.gain.value = lfoDepth;
+    lfo.connect(lg);
+    lg.connect(o.frequency);
+    f.type = filter;
+    f.frequency.value = filterHz;
+    f.Q.value = filter === 'bandpass' ? 6 : 1;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.03);
+    g.gain.setValueAtTime(vol, t + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(f);
+    f.connect(g);
+    g.connect(this.master);
+    o.start(t);
+    lfo.start(t);
+    o.stop(t + dur + 0.02);
+    lfo.stop(t + dur + 0.02);
+  }
+
+  // Original little pop tunes for the Pop Star (MIDI notes).
+  private static readonly TUNES: readonly (readonly number[])[] = [
+    [72, 74, 76, 79, 76],
+    [79, 77, 76, 74, 72, 74],
+    [67, 72, 74, 76, 74, 72],
+    [76, 76, 79, 81, 79, 76],
+    [72, 79, 77, 76, 72],
+  ];
+
+  private voice(key: string): void {
+    switch (key) {
+      case 'goblin': // sneaky "heh heh heh"
+        [0, 0.1, 0.2].forEach((d, i) => this.tone(760 - i * 60, 0.07, 'square', 0.07, 980 - i * 80, d));
+        break;
+      case 'fairy': // sparkly magic
+        this.seq([96, 100, 103, 108, 103, 108, 112], 0.08, 'triangle', 0.07, 0.04);
+        this.noise(0.4, 0.03, 9000, 5000);
+        break;
+      case 'popstar': { // sings a short (original) tune
+        const tune = Audio.TUNES[Math.floor(Math.random() * Audio.TUNES.length)] ?? [];
+        tune.forEach((n, i) => {
+          const f = midiHz(n);
+          this.wobble('triangle', f, f * 1.01, 0.16, 6, f * 0.015, 0.12, 'lowpass', 3000, i * 0.15);
+          this.tone(f * 2, 0.12, 'square', 0.015, null, i * 0.15);
+        });
+        break;
+      }
+      case 'dino': // roooar
+        this.wobble('sawtooth', 300, 110, 0.55, 18, 25, 0.14, 'lowpass', 1200);
+        this.noise(0.5, 0.15, 900, 200);
+        break;
+      case 'tree': // creaky wood
+        this.wobble('sawtooth', 75, 58, 0.7, 7, 22, 0.16, 'bandpass', 700);
+        this.wobble('sawtooth', 60, 50, 0.4, 11, 15, 0.12, 'bandpass', 500, 0.45);
+        break;
+      case 'pie': // SPLAT
+        this.noise(0.3, 0.45, 2500, 200);
+        this.tone(140, 0.15, 'triangle', 0.3, 40);
+        break;
+      case 'dog': // woof woof
+        [0, 0.24].forEach((d) => {
+          this.tone(430, 0.14, 'square', 0.09, 170, d);
+          this.noise(0.1, 0.15, 1500, 400, d);
+        });
+        break;
+      case 'block': // bonk bonk
+        [0, 0.16].forEach((d, i) => {
+          this.tone(230 - i * 40, 0.12, 'triangle', 0.35, 60, d);
+          this.noise(0.03, 0.25, 5000, null, d);
+        });
+        break;
+      case 'poopy': // pfffft
+        this.fart();
+        break;
+      case 'ghost': // oooOOOooo
+        this.wobble('sine', 280, 520, 0.5, 5, 18, 0.12);
+        this.wobble('sine', 520, 240, 0.7, 5, 18, 0.12, 'lowpass', 4000, 0.45);
+        break;
+      case 'beer': // BUUURP
+        this.wobble('sawtooth', 110, 80, 0.6, 14, 30, 0.2, 'lowpass', 500);
+        this.noise(0.5, 0.06, 600, 200);
+        break;
+      case 'spider': // thwip thwip
+        [0, 0.14].forEach((d) => {
+          this.noise(0.1, 0.2, 9000, 1200, d);
+          this.tone(1900, 0.08, 'triangle', 0.06, 800, d);
+        });
+        break;
+    }
+  }
+
   private seq(notes: readonly number[], dur: number, type: Wave, vol: number, gap: number): void {
     notes.forEach((n, i) => this.tone(midiHz(n), dur, type, vol, null, i * gap));
   }
@@ -207,6 +322,10 @@ export class Audio {
     const prev = this.last.get(name);
     if (prev !== undefined && now - prev < 45) return;
     this.last.set(name, now);
+    if (name.startsWith('voice_')) {
+      this.voice(name.slice(6));
+      return;
+    }
     switch (name) {
       case 'jump': this.tone(300, 0.12, 'square', 0.06, 620); break;
       case 'djump': this.tone(480, 0.14, 'square', 0.06, 980); break;

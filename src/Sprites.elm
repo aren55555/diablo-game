@@ -6,6 +6,7 @@ limited NES-style palette. Sprites face right; the renderer mirrors them.
 
 import Data
 import Pixel exposing (..)
+import Types exposing (Character(..))
 
 
 type alias SpriteDef =
@@ -54,7 +55,7 @@ sprite id cv =
 
 all : List SpriteDef
 all =
-    players ++ weapons ++ enemies ++ items ++ projectiles ++ bosses ++ misc
+    players ++ characterSprites ++ auraSprites ++ weapons ++ enemies ++ items ++ projectiles ++ bosses ++ misc
 
 
 
@@ -269,6 +270,7 @@ projectiles =
     , sprite "x_snowball" (new 8 8 |> ellipse 4 4 3 3 'w' |> dot 3 3 'i' |> outline 'e')
     , sprite "x_icicle" (new 6 10 |> poly [ ( 0, 0 ), ( 6, 0 ), ( 3, 10 ) ] 'i' |> line 2 1 3 7 'w' |> outline 'e')
     , sprite "x_bone" (new 10 5 |> hline 2 2 6 'w' |> rect 1 1 2 3 'w' |> rect 7 1 2 3 'w' |> outline 'G')
+    , sprite "x_btc" (new 11 11 |> ellipse 5.5 5.5 4.5 4.5 'Y' |> rect 4 3 1 5 'b' |> hline 5 3 2 'b' |> dot 7 4 'b' |> hline 5 5 2 'b' |> rect 7 6 1 1 'b' |> hline 5 7 2 'b' |> dot 5 2 'b' |> dot 5 8 'b' |> dot 3 3 'b' |> dot 3 7 'b' |> outline 'n')
     , sprite "x_moneybag" (new 10 10 |> ellipse 5 6.5 3.5 3 't' |> rect 4 2 2 2 't' |> hline 3 3 4 'Y' |> rect 4 5 2 3 'Y' |> outline 'b')
     , sprite "x_rocket" (new 10 6 |> rect 1 2 6 2 'm' |> poly [ ( 7, 1.5 ), ( 10, 3 ), ( 7, 4.5 ) ] 'r' |> rect 1 1 2 1 'D' |> rect 1 4 2 1 'D' |> dot 0 2 'f' |> dot 0 3 'F')
     , sprite "x_fart" (new 8 8 |> ellipse 4 4 3 3 'L' |> dot 3 3 'l' |> dot 4 0 'b' |> outline 'M')
@@ -660,6 +662,13 @@ king f =
             else
                 hline 31 22 6 'R' >> dot 30 23 'R' >> dot 37 23 'R'
            )
+        -- big blonde combover wig, swooping forward under the crown
+        |> ellipse 31 7 14 5 'f'
+        |> rect 17 7 6 9 'f'
+        |> poly [ ( 36, 4 ), ( 51, 5 ), ( 46, 11 ), ( 34, 10 ) ] 'f'
+        |> line 19 8 48 7 'Y'
+        |> line 18 11 44 10 'Y'
+        |> line 18 14 22 14 'Y'
         |> rect 22 0 20 5 'Y'
         |> poly [ ( 22, 1 ), ( 22, -4 ), ( 26, 1 ) ] 'Y'
         |> poly [ ( 29, 1 ), ( 32, -5 ), ( 35, 1 ) ] 'Y'
@@ -754,4 +763,436 @@ misc =
     [ sprite "king_portrait" (king 2)
     , sprite "dragon_title" (dragon 2)
     , sprite "warn" (new 7 7 |> poly [ ( 3.5, 0 ), ( 7, 7 ), ( 0, 7 ) ] 'Y' |> rect 3 2 1 3 'k' |> dot 3 6 'k')
+    ]
+
+
+
+-- CHARACTERS (about 12x16, facing right) --------------------------------------------
+
+
+{-| Two legs with feet. lx/rx are the leg columns in the idle pose.
+-}
+legsAt : Pose -> Char -> Char -> Int -> Int -> Canvas -> Canvas
+legsAt pose leg foot lx rx cv =
+    case pose of
+        Idle ->
+            cv |> rect lx 13 2 2 leg |> rect rx 13 2 2 leg |> rect (lx - 1) 15 3 1 foot |> rect rx 15 3 1 foot
+
+        Walk1 ->
+            cv |> rect (lx - 1) 13 2 2 leg |> rect (rx + 1) 13 2 1 leg |> rect (lx - 2) 15 3 1 foot |> rect (rx + 1) 14 3 1 foot
+
+        Walk2 ->
+            cv |> rect lx 13 2 1 leg |> rect rx 13 2 2 leg |> rect (lx - 1) 14 3 1 foot |> rect rx 15 3 1 foot
+
+        Jump ->
+            cv |> rect (lx - 1) 13 2 1 leg |> rect rx 12 2 2 leg |> rect (lx - 2) 14 3 1 foot |> rect (rx + 1) 13 3 1 foot
+
+
+goblin : Pose -> Canvas
+goblin pose =
+    new 13 16
+        |> legsAt pose 'm' 'b' 4 7
+        |> rect 3 9 7 4 't'
+        |> rect 3 11 7 1 'b'
+        |> dot 3 13 't'
+        |> dot 9 13 't'
+        |> rect 9 9 2 2 'L'
+        |> ellipse 6.5 5.5 3.6 3.4 'L'
+        |> poly [ ( 3.5, 4 ), ( 0, 2 ), ( 3, 7 ) ] 'L'
+        |> poly [ ( 9.5, 4 ), ( 13, 2 ), ( 10, 7 ) ] 'L'
+        |> dot 7 5 'Y'
+        |> dot 9 5 'Y'
+        |> hline 6 8 4 'M'
+        |> dot 7 8 'w'
+        |> dot 9 8 'w'
+        |> outline 'k'
+
+
+fairy : Pose -> Canvas
+fairy pose =
+    let
+        flap =
+            pose == Walk1 || pose == Jump
+    in
+    new 12 16
+        |> (if flap then
+                poly [ ( 4, 7 ), ( 0, 1 ), ( 1, 8 ) ] 'i' >> poly [ ( 4, 9 ), ( 0, 13 ), ( 2, 13 ) ] 'e'
+
+            else
+                poly [ ( 4, 7 ), ( 0, 4 ), ( 1, 9 ) ] 'i' >> poly [ ( 4, 9 ), ( 1, 12 ), ( 3, 12 ) ] 'e'
+           )
+        |> legsAt pose 's' 'p' 4 7
+        |> poly [ ( 4, 8 ), ( 8, 8 ), ( 10, 13 ), ( 2, 13 ) ] 'L'
+        |> hline 3 12 7 'm'
+        |> rect 8 9 2 2 's'
+        |> ellipse 6.5 4.5 3.5 3.3 'O'
+        |> rect 5 4 5 3 's'
+        |> dot 7 5 'k'
+        |> dot 9 5 'k'
+        |> dot 8 6 'p'
+        |> outline 'k'
+        |> dot 6 0 'c'
+
+
+{-| A sparkly pop star with long golden hair.
+-}
+popStar : Pose -> Canvas
+popStar pose =
+    new 12 16
+        |> rect 2 4 3 7 'Y'
+        |> legsAt pose 's' 'w' 4 7
+        |> rect 4 8 5 4 'v'
+        |> poly [ ( 3, 11 ), ( 9, 11 ), ( 10, 13 ), ( 2, 13 ) ] 'v'
+        |> dot 5 9 'w'
+        |> dot 7 10 'w'
+        |> dot 4 12 'w'
+        |> dot 8 12 'w'
+        |> rect 8 8 2 3 's'
+        |> ellipse 6.5 4.2 3.5 3.4 'Y'
+        |> rect 5 3 5 4 's'
+        |> hline 5 3 5 'Y'
+        |> dot 7 4 'k'
+        |> dot 9 4 'k'
+        |> dot 8 6 'r'
+        |> outline 'k'
+
+
+{-| A friendly green dinosaur with a saddle.
+-}
+dino : Pose -> Canvas
+dino pose =
+    new 15 16
+        |> legsAt pose 'L' 'O' 4 8
+        |> poly [ ( 3, 10 ), ( 0, 14 ), ( 5, 12 ) ] 'L'
+        |> ellipse 6.5 10 4.2 3.5 'L'
+        |> ellipse 8 11 2.3 2 'w'
+        |> rect 3 7 4 2 'r'
+        |> dot 2 9 'r'
+        |> rect 9 5 3 5 'L'
+        |> ellipse 10 4 3.2 3 'L'
+        |> ellipse 12.5 5.5 2.4 1.8 'L'
+        |> rect 9 1 2 3 'w'
+        |> dot 10 2 'k'
+        |> dot 14 5 'm'
+        |> hline 11 7 3 'm'
+        |> rect 11 9 2 1 'L'
+        |> outline 'k'
+
+
+treeMan : Pose -> Canvas
+treeMan pose =
+    new 13 16
+        |> legsAt pose 'b' 'b' 4 7
+        |> rect 4 6 5 7 't'
+        |> dot 4 11 'b'
+        |> dot 8 7 'b'
+        |> dot 8 12 'b'
+        |> dot 5 8 'f'
+        |> dot 7 8 'f'
+        |> hline 5 10 3 'b'
+        |> line 8 9 11 6 'b'
+        |> dot 12 5 'L'
+        |> line 4 9 1 7 'b'
+        |> ellipse 6.5 3.5 5 3.4 'm'
+        |> ellipse 5 2.5 2 1.5 'L'
+        |> ellipse 9 3.5 1.8 1.2 'L'
+        |> dot 3 4 'L'
+        |> outline 'k'
+
+
+{-| A lady with a cherry pie for a head (and plenty more to throw).
+-}
+pieWoman : Pose -> Canvas
+pieWoman pose =
+    new 12 16
+        |> legsAt pose 'S' 'r' 4 7
+        |> rect 3 9 7 4 'p'
+        |> rect 5 9 3 4 'w'
+        |> rect 9 9 2 2 'S'
+        |> ellipse 6.5 5 4.6 3.3 'o'
+        |> hline 3 3 8 'r'
+        |> hline 4 2 6 'r'
+        |> dot 5 2 'R'
+        |> dot 8 3 'R'
+        |> dot 3 6 'O'
+        |> dot 10 6 'O'
+        |> dot 7 5 'k'
+        |> dot 9 5 'k'
+        |> hline 7 7 2 'R'
+        |> outline 'k'
+        |> dot 6 1 'w'
+        |> dot 7 1 'w'
+
+
+{-| BlackBerry the black dog.
+-}
+dog : Pose -> Canvas
+dog pose =
+    let
+        legs =
+            case pose of
+                Idle ->
+                    [ 3, 5, 10, 12 ]
+
+                Walk1 ->
+                    [ 2, 6, 9, 13 ]
+
+                Walk2 ->
+                    [ 4, 4, 11, 11 ]
+
+                Jump ->
+                    [ 2, 3, 13, 14 ]
+
+        legH =
+            if pose == Jump then
+                2
+
+            else
+                3
+
+        tail cv =
+            case pose of
+                Walk1 ->
+                    line 3 5 0 3 'D' cv
+
+                Walk2 ->
+                    line 3 5 1 1 'D' cv
+
+                _ ->
+                    line 3 5 1 2 'D' cv
+    in
+    new 17 12
+        |> tail
+        |> (\cv -> List.foldl (\lx acc -> rect lx 8 2 legH 'D' acc) cv legs)
+        |> ellipse 8 6 5.5 3 'D'
+        |> hline 6 4 4 'g'
+        |> ellipse 13 3.8 3 2.8 'D'
+        |> rect 14 4 3 2 'D'
+        |> dot 16 4 'k'
+        |> dot 14 3 'w'
+        |> dot 15 6 'p'
+        |> poly [ ( 11, 1 ), ( 13, 1 ), ( 11, 5 ) ] 'k'
+        |> rect 11 6 1 2 'r'
+        |> dot 12 7 'Y'
+        |> outline 'k'
+
+
+blockMan : Pose -> Canvas
+blockMan pose =
+    new 12 16
+        |> legsAt pose 'D' 'D' 4 7
+        |> rect 3 7 7 6 'g'
+        |> hline 3 9 7 'D'
+        |> line 6 7 6 12 'D'
+        |> rect 9 8 2 3 'G'
+        |> rect 3 0 7 7 'G'
+        |> hline 3 2 7 'g'
+        |> dot 6 4 'k'
+        |> dot 8 4 'k'
+        |> hline 6 6 3 'D'
+        |> outline 'k'
+
+
+{-| Mr. Poopy Diaper, a baby with a very full diaper.
+-}
+poopyDiaper : Pose -> Canvas
+poopyDiaper pose =
+    new 12 16
+        |> legsAt pose 's' 's' 4 7
+        |> rect 3 10 7 3 'w'
+        |> dot 4 12 'b'
+        |> dot 5 11 'b'
+        |> dot 6 12 'b'
+        |> dot 8 11 'y'
+        |> rect 4 8 5 2 's'
+        |> rect 9 8 2 2 's'
+        |> ellipse 6.5 4.6 4 3.8 's'
+        |> dot 6 4 'w'
+        |> dot 7 4 'k'
+        |> dot 8 4 'w'
+        |> dot 9 4 'k'
+        |> dot 5 6 'p'
+        |> dot 10 6 'p'
+        |> dot 8 7 'e'
+        |> outline 'k'
+        |> dot 6 0 'b'
+        |> dot 7 1 'b'
+
+
+ghosty : Pose -> Canvas
+ghosty pose =
+    let
+        hem =
+            case pose of
+                Walk1 ->
+                    [ 1, 4, 7, 10 ]
+
+                Walk2 ->
+                    [ 2, 5, 8 ]
+
+                Jump ->
+                    [ 3, 6, 9 ]
+
+                Idle ->
+                    [ 2, 5, 8, 10 ]
+    in
+    new 12 16
+        |> ellipse 6 6.5 4.5 5 'i'
+        |> rect 2 6 9 7 'i'
+        |> (\cv -> List.foldl (\x acc -> dot x 13 'i' acc) cv hem)
+        |> hline 2 12 9 'e'
+        |> dot 11 8 'i'
+        |> rect 5 4 2 3 'k'
+        |> rect 8 4 2 3 'k'
+        |> rect 7 9 2 2 'k'
+        |> outline 'k'
+
+
+beerMan : Pose -> Canvas
+beerMan pose =
+    new 13 16
+        |> legsAt pose 'D' 'b' 5 8
+        |> rect 3 4 7 9 'Y'
+        |> line 4 5 4 11 'y'
+        |> hline 3 12 7 'n'
+        |> rect 0 6 3 1 'G'
+        |> rect 0 6 1 4 'G'
+        |> rect 0 9 3 1 'G'
+        |> ellipse 6.5 3.5 4.2 2 'w'
+        |> dot 9 5 'w'
+        |> dot 6 7 'k'
+        |> dot 8 7 'k'
+        |> hline 6 9 3 'n'
+        |> rect 10 8 2 1 'y'
+        |> outline 'k'
+        |> dot 4 0 'w'
+        |> dot 8 0 'w'
+
+
+spider : Pose -> Canvas
+spider pose =
+    let
+        k =
+            case pose of
+                Walk1 ->
+                    1
+
+                Walk2 ->
+                    -1
+
+                _ ->
+                    0
+
+        lift =
+            if pose == Jump then
+                3
+
+            else
+                0
+
+        leg i fx =
+            let
+                wobble =
+                    if modBy 2 i == 0 then
+                        k
+
+                    else
+                        -k
+
+                kneeY =
+                    if modBy 2 i == 0 then
+                        2
+
+                    else
+                        4
+            in
+            line ((fx + 8) // 2) 6 fx kneeY 'D' >> line fx kneeY (fx + wobble) (11 - lift) 'D'
+    in
+    List.foldl (\( i, fx ) cv -> leg i fx cv) (new 17 12) (List.indexedMap Tuple.pair [ 1, 3, 5, 7, 9, 11, 13, 15 ])
+        |> ellipse 5.5 6 4 3.5 'v'
+        |> hline 3 5 4 'V'
+        |> hline 3 7 4 'V'
+        |> ellipse 11 6.5 3 2.5 'v'
+        |> dot 12 5 'w'
+        |> dot 13 6 'w'
+        |> dot 11 5 'r'
+        |> dot 14 8 'w'
+        |> outline 'k'
+
+
+characterSprites : List SpriteDef
+characterSprites =
+    let
+        drawer c =
+            case c of
+                Goblin ->
+                    goblin
+
+                Fairy ->
+                    fairy
+
+                PopStar ->
+                    popStar
+
+                Dino ->
+                    dino
+
+                TreeMan ->
+                    treeMan
+
+                PieWoman ->
+                    pieWoman
+
+                BlackBerry ->
+                    dog
+
+                BlockMan ->
+                    blockMan
+
+                PoopyDiaper ->
+                    poopyDiaper
+
+                Ghosty ->
+                    ghosty
+
+                BeerMan ->
+                    beerMan
+
+                Spider ->
+                    spider
+    in
+    List.concatMap
+        (\c ->
+            let
+                key =
+                    (Data.characterInfo c).key
+            in
+            List.map (\( name, pose ) -> sprite ("c_" ++ key ++ "_" ++ name) (drawer c pose))
+                [ ( "idle", Idle ), ( "walk1", Walk1 ), ( "walk2", Walk2 ), ( "jump", Jump ) ]
+        )
+        Data.characters
+
+
+
+-- AURAS ------------------------------------------------------------------------------
+
+
+auraSprites : List SpriteDef
+auraSprites =
+    [ sprite "a_star" (new 5 5 |> hline 0 2 5 'p' |> rect 2 0 1 5 'p' |> dot 2 2 'w')
+    , sprite "a_star2" (new 5 5 |> hline 0 2 5 'c' |> rect 2 0 1 5 'c' |> dot 2 2 'w')
+    , sprite "a_note" (new 5 7 |> rect 3 0 1 5 'p' |> rect 3 0 2 1 'p' |> dot 4 1 'p' |> rect 1 4 3 2 'p' |> rect 0 5 2 2 'p')
+    , sprite "a_note2" (new 5 7 |> rect 3 0 1 5 'v' |> rect 3 0 2 1 'v' |> dot 4 1 'v' |> rect 1 4 3 2 'v' |> rect 0 5 2 2 'v')
+    , sprite "a_footprint" (new 5 3 |> rect 1 1 3 2 'm' |> dot 0 0 'm' |> dot 2 0 'm' |> dot 4 0 'm')
+    , sprite "a_leaf" (new 4 3 |> hline 1 0 2 'L' |> hline 0 1 4 'L' |> hline 1 2 2 'm')
+    , sprite "a_leaf2" (new 4 3 |> hline 1 0 2 'o' |> hline 0 1 4 'O' |> hline 1 2 2 'O')
+    , sprite "a_splat" (new 7 3 |> hline 1 1 5 'w' |> hline 0 2 7 'y' |> dot 2 0 'w' |> dot 5 0 'r')
+    , sprite "a_paw" (new 5 4 |> rect 1 2 3 2 'g' |> dot 0 1 'g' |> dot 2 0 'g' |> dot 4 1 'g')
+    , sprite "a_heart" (new 5 4 |> dot 1 0 'r' |> dot 3 0 'r' |> hline 0 1 5 'r' |> hline 1 2 3 'r' |> dot 2 3 'r')
+    , sprite "a_block" (new 3 3 |> rect 0 0 3 3 'g' |> dot 0 0 'G')
+    , sprite "a_stink" (new 3 7 |> dot 1 0 'l' |> dot 0 1 'l' |> dot 1 2 'n' |> dot 2 3 'n' |> dot 1 4 'l' |> dot 0 5 'l' |> dot 1 6 'n')
+    , sprite "a_bubble" (new 4 4 |> hline 1 0 2 'w' |> hline 1 3 2 'w' |> rect 0 1 1 2 'w' |> rect 3 1 1 2 'w' |> dot 1 1 'y')
+    , sprite "a_web" (new 11 7 |> line 5 0 0 6 'G' |> line 5 0 10 6 'G' |> line 5 0 5 6 'G' |> line 5 0 2 6 'G' |> line 5 0 8 6 'G' |> hline 3 2 5 'w' |> hline 1 4 9 'w' |> hline 0 6 11 'G')
+    , sprite "a_fly" (new 3 2 |> dot 1 1 'k' |> dot 0 0 'i' |> dot 2 0 'i')
+    , sprite "a_crumb" (new 2 2 |> rect 0 0 2 2 'o')
     ]

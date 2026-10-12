@@ -43,6 +43,7 @@ main =
 
 type Screen
     = Title
+    | Select
     | Story
     | Playing World Bool
     | Interlude Int String (List Player)
@@ -73,6 +74,9 @@ type alias Model =
     , tauntIdx : Int
     , startLevel : Int
     , debug : Bool
+    , picks : List Int
+    , ready : List Bool
+    , readyT : Float
     }
 
 
@@ -100,6 +104,9 @@ init flags =
       , tauntIdx = 0
       , startLevel = 1
       , debug = flags.debug
+      , picks = [ 0, 3, 6, 9 ]
+      , ready = [ False, False, False, False ]
+      , readyT = 0
       }
     , Ports.sprites encodeSprites
     )
@@ -181,6 +188,8 @@ readPads model =
               , down = held.down
               , upP = (held.up && not prev.up) || any m.up model.tapped
               , downP = (held.down && not prev.down) || any m.down model.tapped
+              , leftP = (held.left && not prev.left) || any m.left model.tapped
+              , rightP = (held.right && not prev.right) || any m.right model.tapped
               }
             )
         )
@@ -242,7 +251,7 @@ tick dt model0 =
             List.map Tuple.second inputs
 
         padAt i =
-            Maybe.withDefault { left = False, right = False, up = False, down = False, upP = False, downP = False } (listGet i pads)
+            Maybe.withDefault { left = False, right = False, up = False, down = False, upP = False, downP = False, leftP = False, rightP = False } (listGet i pads)
 
         padStart =
             List.any .start model0.pads
@@ -254,7 +263,7 @@ tick dt model0 =
             tapped "Enter" || tapped "Space" || tapped "NumpadEnter" || (padStart && not model0.prevStart)
 
         pauseP =
-            tapped "Escape" || tapped "KeyP"
+            tapped "Escape" || tapped "KeyP" || tapped "Backquote"
 
         model =
             { model0
@@ -341,7 +350,7 @@ stepScreen dt startP pauseP tapped padAt model =
                     Maybe.withDefault model.startLevel picked
             in
             if startP && List.any identity joined then
-                ( goto Story { model | joined = joined, startLevel = startLevel }, [ "select" ] )
+                ( goto Select { model | joined = joined, startLevel = startLevel, ready = [ False, False, False, False ], readyT = 0 }, [ "select" ] )
 
             else
                 ( { model | joined = joined, startLevel = startLevel }
@@ -352,6 +361,9 @@ stepScreen dt startP pauseP tapped padAt model =
                     []
                 )
 
+        Select ->
+            stepSelect dt startP padAt model
+
         Story ->
             if model.screenT > 0.5 && startP then
                 let
@@ -359,7 +371,7 @@ stepScreen dt startP pauseP tapped padAt model =
                         model.joined
                             |> List.indexedMap Tuple.pair
                             |> List.filter Tuple.second
-                            |> List.map (\( i, _ ) -> Make.player i)
+                            |> List.map (\( i, _ ) -> Make.player i (Data.characterAt (Maybe.withDefault 0 (listGet i model.picks))))
                 in
                 ( goto (Playing (World.new model.startLevel players) False) model, [ "select" ] )
 
@@ -441,6 +453,9 @@ view model =
         Title ->
             ( Render.title model.time model.joined model.startLevel, [], "title" )
 
+        Select ->
+            ( Render.characterSelect model.time model.joined model.picks model.ready, [], "title" )
+
         Story ->
             ( Render.story model.time, [], "title" )
 
@@ -496,3 +511,72 @@ levelKey n =
 
     else
         "Digit" ++ String.fromInt n
+
+
+{-| Each joined player picks a character: left/right to browse, down to lock
+in, up to change their mind. Once everyone is ready the game starts.
+-}
+stepSelect : Float -> Bool -> (Int -> Pad) -> Model -> ( Model, List String )
+stepSelect dt startP padAt model =
+    let
+        count =
+            List.length Data.characters
+
+        voice i =
+            "voice_" ++ (Data.characterInfo (Data.characterAt i)).key
+
+        stepOne i ( ( on, pick ), isReady ) =
+            let
+                p =
+                    padAt i
+            in
+            if not on then
+                ( ( pick, False ), [] )
+
+            else if isReady then
+                if p.upP then
+                    ( ( pick, False ), [ "select" ] )
+
+                else
+                    ( ( pick, True ), [] )
+
+            else if p.downP then
+                ( ( pick, True ), [ voice pick, "pickup" ] )
+
+            else if p.leftP then
+                ( ( modBy count (pick - 1), False ), [ voice (pick - 1) ] )
+
+            else if p.rightP then
+                ( ( modBy count (pick + 1), False ), [ voice (pick + 1) ] )
+
+            else
+                ( ( pick, False ), [] )
+
+        results =
+            List.indexedMap stepOne
+                (List.map2 Tuple.pair (List.map2 Tuple.pair model.joined model.picks) model.ready)
+
+        picks =
+            List.map (Tuple.first >> Tuple.first) results
+
+        ready =
+            List.map (Tuple.first >> Tuple.second) results
+
+        sounds =
+            List.concatMap Tuple.second results
+
+        everyoneReady =
+            List.all identity (List.map2 (\on r -> not on || r) model.joined ready)
+
+        readyT =
+            if everyoneReady then
+                model.readyT + dt
+
+            else
+                0
+    in
+    if (model.screenT > 0.3 && startP) || readyT > 0.8 then
+        ( goto Story { model | picks = picks, ready = List.map2 (||) ready model.joined, readyT = 0 }, sounds ++ [ "select" ] )
+
+    else
+        ( { model | picks = picks, ready = ready, readyT = readyT }, sounds )
