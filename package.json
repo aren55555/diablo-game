@@ -1,0 +1,9 @@
+{
+  "name": "mount-diablo",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "1.3.1",
+    "typescript": "5.9.3"
+  }
+}

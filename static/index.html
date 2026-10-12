@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mount Diablo</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      body { display: flex; align-items: center; justify-content: center; }
+      #screen { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+      #elm { display: none; }
+    </style>
+  </head>
+  <body>
+    <canvas id="screen"></canvas>
+    <div id="elm"></div>
+    <script>
+      // Dev aid: ?bgtick keeps the game running in background tabs (for automated testing).
+      if (new URLSearchParams(location.search).has("bgtick")) {
+        window.requestAnimationFrame = (cb) => setTimeout(() => cb(performance.now()), 16);
+      }
+    </script>
+    <script src="elm.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,7 @@
+[tools]
+# Native arm64/x64 builds of the official Elm 0.19.1 compiler
+# (the upstream macOS binary is x86-only and needs Rosetta).
+"npm:@lydell/elm" = "0.19.1-14"
+"npm:elm-format" = "0.8.7"
+bun = "1.3"
+just = "latest"
