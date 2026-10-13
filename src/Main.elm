@@ -263,7 +263,7 @@ tick dt model0 =
             tapped "Enter" || tapped "Space" || tapped "NumpadEnter" || (padStart && not model0.prevStart)
 
         pauseP =
-            tapped "Escape" || tapped "KeyP" || tapped "Backquote"
+            tapped "Escape"
 
         model =
             { model0

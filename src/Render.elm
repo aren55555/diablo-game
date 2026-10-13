@@ -489,7 +489,7 @@ world paused w =
         ++ (if paused then
                 [ Alpha 0.6, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
                     ++ label "PAUSED" (gameW / 2) 100 "#fcfcfc" Mid 2
-                    ++ label "PRESS ~ (OR P) TO KEEP CLIMBING" (gameW / 2) 124 "#bcbcc4" Mid 1
+                    ++ label "PRESS ESC TO KEEP CLIMBING" (gameW / 2) 124 "#bcbcc4" Mid 1
                     ++ label "M = MUTE" (gameW / 2) 136 "#bcbcc4" Mid 1
 
             else
@@ -1309,7 +1309,7 @@ title time joined startLevel =
         ++ label "A 4-PLAYER CLIMBING ADVENTURE" 26 86 "#fcfcfc" Left 1
         ++ label "UP = JUMP (TAP TWICE TO DOUBLE JUMP)" 26 100 "#bcbcc4" Left 1
         ++ label "DOWN = ATTACK / GRAB WEAPON" 26 110 "#bcbcc4" Left 1
-        ++ label "~ = PAUSE    M = MUTE" 26 120 "#7c7c84" Left 1
+        ++ label "ESC = PAUSE    M = MUTE" 26 120 "#7c7c84" Left 1
         ++ List.concat (List.indexedMap slot joined)
         ++ label
             (if startLevel == 1 then
