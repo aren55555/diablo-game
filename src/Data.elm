@@ -86,6 +86,11 @@ sand =
     { sky = [ "#e87818", "#f89c38", "#fcbc58", "#fcd890", "#fcecc0" ], far = "#e0a868", near = "#c8843c", top = "#f8d878", body = "#d0a050", edge = "#805020", fx = Sandstorm, deco = Cactus, ice = False, stars = False }
 
 
+miami : Theme
+miami =
+    { sky = [ "#3cbcfc", "#7cd4fc", "#f8a4c8", "#fcc4a0", "#fce4a0" ], far = "#f8b8d8", near = "#1c6c64", top = "#fce4a0", body = "#c08850", edge = "#6c4420", fx = Seagulls, deco = Palms, ice = False, stars = False }
+
+
 rocky : Theme
 rocky =
     { sky = [ "#e45c10", "#f87838", "#fc9c58", "#fcbc80", "#fce0a8" ], far = "#b88c70", near = "#7c5c4c", top = "#bcbcbc", body = "#7c6c64", edge = "#3c302c", fx = NoFx, deco = Stone, ice = False, stars = False }
@@ -147,7 +152,7 @@ levelInfo n =
             { name = "FOOTHILL MEADOW", theme = meadow, weapons = [ Nunchucks, FartBomb, Sword ] }
 
         2 ->
-            { name = "BABY DRAGON NESTS", theme = meadow, weapons = [ Nunchucks, FartBomb, Sword ] }
+            { name = "SOUTH BEACH", theme = miami, weapons = [ Nunchucks, FartBomb, Sword ] }
 
         3 ->
             { name = "SANDSTONE LEDGES", theme = sand, weapons = [ Sword, FartBomb, MachineGun, Nunchucks ] }
@@ -196,6 +201,7 @@ boss name sub hp ( w, h ) speed sprite attacks quotes =
     , eyes = []
     , attacks = attacks
     , quotes = quotes
+    , coward = False
     }
 
 
@@ -211,16 +217,17 @@ bossDefs =
         [ "FOR THE KING!", "NO CLIMBING ALLOWED!" ]
     , let
         b =
-            boss "BROODMOTHER"
-                "MAMA OF ALL BABY DRAGONS"
-                650
-                ( 46, 30 )
-                52
-                "b_brood"
-                [ Shoot Fireball 5 0.6 120 False, Summon BabyDragon 2, Swoop ]
-                [ "LEAVE MY BABIES ALONE!", "SCREEEE!" ]
+            boss "SHADY BILLIONAIRE"
+                "THE KING'S RICH BEST FRIEND"
+                450
+                ( 30, 44 )
+                64
+                "b_billionaire"
+                [ Summon Bodyguard 2, ThrowCash 6, Jet 6, Summon Bodyguard 2 ]
+                [ "GET HIM, BOYS!", "I KNOW EVERYONE!", "MY LAWYERS WILL HANDLE THIS!", "NO PICTURES!", "I'LL JUST BUY THIS MOUNTAIN!", "HAVE YOUR PEOPLE CALL MY PEOPLE!" ]
       in
-      { b | fly = True, hover = 68, mouth = ( 28, -21 ) }
+      -- never attacks himself: he runs away and lets his bodyguards fight
+      { b | coward = True }
     , boss "BOULDER GOLEM"
         "ROCKS FOR BRAINS"
         850

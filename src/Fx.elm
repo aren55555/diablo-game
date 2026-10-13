@@ -279,7 +279,22 @@ damageTarget id dmg kb pi quiet w =
                                 |> numberText (b.x + b.w / 2) b.y dmg quiet
                     in
                     if enrage then
-                        { w2 | banner = Just { text = b.def.name ++ " IS ANGRY!", sub = "WATCH OUT!", t = 2, color = "#fc3c3c" } }
+                        { w2
+                            | banner =
+                                Just
+                                    { text =
+                                        b.def.name
+                                            ++ (if b.def.coward then
+                                                    " IS PANICKING!"
+
+                                                else
+                                                    " IS ANGRY!"
+                                               )
+                                    , sub = "WATCH OUT!"
+                                    , t = 2
+                                    , color = "#fc3c3c"
+                                    }
+                        }
                             |> sfx "roar"
 
                     else
@@ -349,6 +364,9 @@ killEnemy e pi w =
 
                 Goon ->
                     "#fc9838"
+
+                Bodyguard ->
+                    "#404048"
 
         r =
             rnd (e.id * 13 + w.tick)

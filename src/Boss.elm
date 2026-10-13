@@ -160,7 +160,7 @@ update dt w =
                             w3 =
                                 List.foldl
                                     (\p acc ->
-                                        if overlaps (playerBox p) b3 then
+                                        if not b3.def.coward && overlaps (playerBox p) b3 then
                                             hurtPlayer p.idx (10 * b3.dmgMul) (Just (bcx b3)) acc
 
                                         else
@@ -237,6 +237,9 @@ idle dt tgt b w =
                         b.floorY - b.def.hover - b.h + sin (b.t * 2) * 11
                 in
                 { b | x = b.x + clamp (-sp * dt) (sp * dt) (tx - b.x), y = b.y + clamp (-80 * dt) (80 * dt) (ty - b.y), facing = facing }
+
+            else if b.def.coward then
+                runAway sp tgt b
 
             else
                 { b
@@ -689,6 +692,98 @@ runAttack dt tgt atk0 b w =
                     else
                         ( set { b | beams = List.map (\bm -> { bm | px = lerp bm.sx bm.ex k }) b.beams } a, w )
 
+        ThrowCash n ->
+            -- tosses wads of cash over his shoulder while running: harmless bribes
+            let
+                running =
+                    runAway b.def.speed tgt { b | tele = 0.1 }
+
+                behind =
+                    if pcx tgt < bcx b then
+                        -1
+
+                    else
+                        1
+            in
+            if a.tt > 0.3 + toFloat a.fired * 0.15 && a.fired < n then
+                let
+                    s =
+                        w.tick * 7 + a.fired
+                in
+                ( set running { a | fired = a.fired + 1 }
+                , w
+                    |> pickup Cash (bcx b - 5) (b.y + 10) (behind * rndRange s 60 150) (rndRange (s + 1) -260 -160) 10
+                    |> sfx "cash"
+                )
+
+            else if a.tt > 0.3 + toFloat n * 0.15 + 0.3 then
+                ( endAttack running, w )
+
+            else
+                ( set running a, w )
+
+        Jet n ->
+            -- his private jet flies across the top of the screen dropping crates
+            case a.stage of
+                0 ->
+                    if a.tt > 0.6 then
+                        let
+                            dir =
+                                if rnd (w.tick * 5) < 0.5 then
+                                    1
+
+                                else
+                                    -1
+
+                            startX =
+                                if dir > 0 then
+                                    -40
+
+                                else
+                                    gameW + 40
+                        in
+                        ( set { b | vx = 0 } { a | stage = 1, tt = 0, ty = dir, tx = startX }, sfx "jet" w )
+
+                    else
+                        ( set { b | vx = 0, tele = 0.1 } a, w )
+
+                _ ->
+                    let
+                        dir =
+                            a.ty
+
+                        x =
+                            a.tx + dir * 200 * dt
+
+                        progress =
+                            if dir > 0 then
+                                (x + 40) / (gameW + 80)
+
+                            else
+                                (gameW + 40 - x) / (gameW + 80)
+
+                        want =
+                            min n (floor (progress * toFloat (n + 1)))
+
+                        drop _ acc =
+                            let
+                                p0 =
+                                    Make.proj
+                            in
+                            spawnProj { p0 | kind = Crate, x = x, y = acc.camY + 38, vx = dir * 30, vy = 20, grav = 300, r = 4, dmg = 12 * b.dmgMul, life = 4, floorBreak = True, shadow = True } acc
+
+                        w2 =
+                            List.foldl drop w (List.range a.fired (want - 1))
+
+                        running =
+                            runAway b.def.speed tgt b
+                    in
+                    if (dir > 0 && x > gameW + 40) || (dir < 0 && x < -40) then
+                        ( endAttack running, w2 )
+
+                    else
+                        ( set running { a | tx = x, fired = max a.fired want }, w2 )
+
         BreathA kind ->
             let
                 ( mx, my ) =
@@ -869,3 +964,36 @@ breath dt b w =
                         ( w2, dropT )
             in
             { w3 | boss = Maybe.map (\bb -> { bb | breath = Just { br | t = br.t + dt, dropT = dropT2 } }) w3.boss }
+
+
+{-| Cowardly bosses never fight: they run from the nearest player, and hop
+right over them when cornered against a wall.
+-}
+runAway : Float -> Player -> Boss -> Boss
+runAway sp tgt b =
+    let
+        away =
+            if pcx tgt < bcx b then
+                1
+
+            else
+                -1
+
+        dist =
+            abs (pcx tgt - bcx b)
+
+        cornered =
+            (away > 0 && b.x >= gameW - b.w - 12) || (away < 0 && b.x <= 12)
+    in
+    if not b.onGround then
+        b
+
+    else if cornered && dist < b.w / 2 + 40 then
+        { b | vy = -360, vx = -away * 190, facing = -away, onGround = False }
+
+    else if dist < 170 then
+        { b | vx = away * sp, facing = away }
+
+    else
+        -- far enough: stand still and nervously watch the player
+        { b | vx = 0, facing = -away }

@@ -108,6 +108,7 @@ type EnemyKind
     = Goon
     | BabyDragon
     | Archer
+    | Bodyguard
 
 
 type alias Enemy =
@@ -153,6 +154,7 @@ type ProjKind
     | BitcoinP
     | Wave
     | Spark
+    | Crate
 
 
 type Owner
@@ -223,6 +225,7 @@ type ItemKind
     = Coin
     | Diamond
     | Heart
+    | Cash
     | WeaponItem Weapon
 
 
@@ -256,6 +259,8 @@ type AttackSpec
     | Summon EnemyKind Int
     | LaserA Int
     | BreathA BreathKind
+    | ThrowCash Int
+    | Jet Int
 
 
 type alias BossDef =
@@ -272,6 +277,7 @@ type alias BossDef =
     , eyes : List ( Float, Float )
     , attacks : List AttackSpec
     , quotes : List String
+    , coward : Bool
     }
 
 
@@ -340,6 +346,7 @@ type WeatherFx
     | Sparkle
     | Sandstorm
     | Electric
+    | Seagulls
 
 
 type Deco
@@ -351,6 +358,7 @@ type Deco
     | GoldTrim
     | Cactus
     | Circuit
+    | Palms
 
 
 type alias Theme =

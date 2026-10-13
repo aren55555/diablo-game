@@ -60,6 +60,9 @@ enemy id kind x y plat lvl =
                 Archer ->
                     ( ( 10, 16 ), 26 * s )
 
+                Bodyguard ->
+                    ( ( 11, 16 ), 55 * s )
+
         y0 =
             if plat >= 0 then
                 y - h

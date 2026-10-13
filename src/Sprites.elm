@@ -239,6 +239,8 @@ enemies =
     , sprite "e_baby_1" (babyDragon 1)
     , sprite "e_archer_0" (archer 0)
     , sprite "e_archer_1" (archer 1)
+    , sprite "e_guard_0" (bodyguard 0)
+    , sprite "e_guard_1" (bodyguard 1)
     ]
 
 
@@ -254,6 +256,7 @@ items =
     , sprite "i_heart" (new 9 8 |> ellipse 2.8 2.8 2 2 'r' |> ellipse 6.2 2.8 2 2 'r' |> poly [ ( 0.8, 3 ), ( 8.2, 3 ), ( 4.5, 7.5 ) ] 'r' |> dot 2 2 'w' |> outline 'R')
     , sprite "i_skull" (new 9 9 |> ellipse 4.5 3.5 3.5 3 'w' |> rect 3 6 3 2 'w' |> dot 3 3 'k' |> dot 6 3 'k' |> dot 4 7 'k' |> outline 'k')
     , sprite "i_crown" (new 11 8 |> rect 1 3 9 4 'Y' |> poly [ ( 1, 4 ), ( 1, 0 ), ( 4, 3 ) ] 'Y' |> poly [ ( 4, 3 ), ( 5.5, 0 ), ( 7, 3 ) ] 'Y' |> poly [ ( 7, 3 ), ( 10, 0 ), ( 10, 4 ) ] 'Y' |> dot 5 5 'r' |> dot 3 5 'c' |> dot 7 5 'c' |> outline 'n')
+    , sprite "i_cash" (new 10 7 |> rect 1 1 8 5 'm' |> hline 1 2 8 'L' |> hline 1 4 8 'L' |> rect 4 1 2 5 'Y' |> outline 'M')
     ]
 
 
@@ -277,6 +280,8 @@ projectiles =
     , sprite "x_magic" (new 9 9 |> line 4 0 4 8 'v' |> line 0 4 8 4 'v' |> ellipse 4.5 4.5 2 2 'c' |> dot 4 4 'w')
     , sprite "x_wave" (new 12 10 |> poly [ ( 0, 10 ), ( 4, 2 ), ( 8, 0 ), ( 12, 10 ) ] 'G' |> poly [ ( 3, 10 ), ( 6, 4 ), ( 9, 10 ) ] 'g' |> outline 'D')
     , sprite "x_spark" (new 7 11 |> line 4 0 1 5 'f' |> line 1 5 5 5 'f' |> line 5 5 2 10 'f' |> line 3 1 2 4 'w' |> line 4 6 3 8 'w' |> outline 'c')
+    , sprite "x_crate" (new 9 9 |> rect 0 0 9 9 't' |> line 1 1 7 7 'b' |> line 7 1 1 7 'b' |> outline 'b')
+    , sprite "x_jet" (new 36 12 |> poly [ ( 0, 1 ), ( 5, 1 ), ( 9, 6 ), ( 2, 6 ) ] 'w' |> ellipse 18 7 15 3 'w' |> poly [ ( 30, 5 ), ( 36, 7 ), ( 30, 9 ) ] 'w' |> hline 4 8 28 'Y' |> poly [ ( 14, 8 ), ( 22, 8 ), ( 18, 12 ) ] 'G' |> dot 13 6 'e' |> dot 17 6 'e' |> dot 21 6 'e' |> dot 25 6 'e' |> rect 29 5 2 2 'E' |> outline 'k')
     ]
 
 
@@ -337,32 +342,59 @@ captain f =
         |> outline 'k'
 
 
-brood : Int -> Canvas
-brood f =
-    new 60 40
+{-| The Shady Billionaire: silver hair, shades, a pink suit and a gold chain.
+frame 0/1 = running, frame 2 = tossing cash.
+-}
+billionaire : Int -> Canvas
+billionaire f =
+    new 36 46
         |> (if f == 1 then
-                poly [ ( 20, 20 ), ( 6, 38 ), ( 34, 24 ) ] 'm'
+                rect 11 34 5 8 'w' >> rect 21 33 5 8 'w' >> rect 9 41 7 3 'b' >> rect 21 40 7 3 'b'
 
             else
-                poly [ ( 20, 18 ), ( 8, 0 ), ( 36, 14 ) ] 'm'
+                rect 13 34 5 9 'w' >> rect 19 34 5 9 'w' >> rect 11 42 7 3 'b' >> rect 19 42 7 3 'b'
            )
-        |> line 2 30 12 24 'L'
-        |> line 2 31 12 25 'L'
-        |> ellipse 24 24 14 8 'L'
-        |> ellipse 25 28 9 3 'y'
-        |> ellipse 45 16 9 7 'L'
-        |> rect 50 15 8 5 'L'
-        |> rect 46 11 4 3 'w'
-        |> dot 48 12 'r'
-        |> poly [ ( 40, 11 ), ( 37, 3 ), ( 43, 9 ) ] 'y'
+        |> ellipse 18 27 10 9 'p'
+        |> rect 9 24 18 10 'p'
+        |> poly [ ( 14, 20 ), ( 18, 31 ), ( 22, 20 ) ] 'w'
+        |> line 15 21 18 26 'Y'
+        |> line 21 21 18 26 'Y'
+        |> dot 18 27 'Y'
+        |> ellipse 18 12 7 7 'S'
+        |> rect 11 4 15 3 'G'
+        |> poly [ ( 11, 7 ), ( 26, 3 ), ( 26, 7 ) ] 'w'
+        |> rect 11 7 2 4 'G'
+        |> hline 13 10 12 'k'
+        |> rect 14 10 4 2 'k'
+        |> rect 20 10 4 2 'k'
+        |> hline 17 15 5 'w'
+        |> dot 22 14 'R'
         |> (if f == 2 then
-                rect 51 19 8 2 'R' >> dot 52 18 'w' >> dot 56 18 'w'
+                ellipse 30 14 3 5 'p' >> rect 28 4 8 5 'm' >> hline 28 5 8 'L' >> rect 31 4 2 5 'Y'
 
             else
-                hline 52 19 6 'M'
+                ellipse 29 28 3 6 'p' >> rect 26 33 9 7 'b' >> rect 29 32 3 1 'Y' >> hline 26 36 9 'Y'
            )
-        |> rect 18 30 3 5 'L'
-        |> rect 28 30 3 5 'L'
+        |> ellipse 7 28 3 6 'p'
+        |> outline 'k'
+
+
+bodyguard : Int -> Canvas
+bodyguard f =
+    new 14 17
+        |> (if f == 0 then
+                rect 4 13 2 3 'D' >> rect 8 13 2 3 'D'
+
+            else
+                rect 3 13 2 3 'D' >> rect 9 13 2 2 'D'
+           )
+        |> rect 2 6 10 7 'D'
+        |> rect 6 6 2 5 'w'
+        |> rect 6 7 1 3 'k'
+        |> rect 11 8 2 3 'S'
+        |> ellipse 7 3.5 3.3 3.2 'S'
+        |> hline 6 3 5 'k'
+        |> dot 4 4 'G'
         |> outline 'k'
 
 
@@ -769,7 +801,7 @@ bosses =
             List.map (\i -> sprite (name ++ "_" ++ String.fromInt i) (fn i)) [ 0, 1, 2 ]
     in
     frames "b_captain" captain
-        ++ frames "b_brood" brood
+        ++ frames "b_billionaire" billionaire
         ++ frames "b_golem" golem
         ++ frames "b_bat" bat
         ++ frames "b_troll" troll

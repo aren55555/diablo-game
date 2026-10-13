@@ -992,8 +992,18 @@ walker dt tgt e w =
 
                     shot =
                         Make.proj
+
+                    -- bodyguards walk like goons but always hunt you down
+                    guard =
+                        e.kind == Bodyguard
                 in
-                case e.kind of
+                case
+                    if guard then
+                        Goon
+
+                    else
+                        e.kind
+                of
                     Goon ->
                         let
                             speed =
@@ -1002,7 +1012,11 @@ walker dt tgt e w =
                             chasing =
                                 case tgt of
                                     Just p ->
-                                        abs (p.y + 15 - (e.y + e.h)) < 6 && abs (pcx p - cx) < 104
+                                        if guard then
+                                            abs (p.y + 15 - (e.y + e.h)) < 40
+
+                                        else
+                                            abs (p.y + 15 - (e.y + e.h)) < 6 && abs (pcx p - cx) < 104
 
                                     Nothing ->
                                         False
@@ -1020,7 +1034,10 @@ walker dt tgt e w =
                                         e.facing
 
                             sp =
-                                if chasing then
+                                if chasing && guard then
+                                    speed * 2.2
+
+                                else if chasing then
                                     speed * 1.7
 
                                 else
