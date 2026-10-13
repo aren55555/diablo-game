@@ -4,9 +4,11 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 
 mise := "mise exec --"
 
+mod container
+
 # List available recipes
 default:
-    @just --list
+    @just --list --list-submodules
 
 # Install the toolchain (elm, elm-format, bun) and TypeScript deps
 setup:
