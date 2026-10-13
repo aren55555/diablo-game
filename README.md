@@ -40,7 +40,8 @@ just fmt-check  # verify formatting without changing files
 just clean      # remove dist/, elm-stuff/, node_modules/
 ```
 
-Dev URL flags: `?debug` turns on `B` (skip to the boss) and `N` (defeat the
+Dev URL flags: `?touch` shows the on-screen phone controls on a desktop.
+`?debug` turns on `B` (skip to the boss) and `N` (defeat the
 boss). `?bgtick` keeps the game running in a background tab, for automated
 testing.
 

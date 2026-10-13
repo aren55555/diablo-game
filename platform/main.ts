@@ -2,6 +2,7 @@
 // sounds/music and reports gamepads. All game logic lives in Elm (src/).
 import { Audio, type Track } from './audio';
 import { drawText, type Align } from './font';
+import { setupTouch } from './touch';
 
 const W = 384;
 const H = 240;
@@ -215,7 +216,10 @@ window.addEventListener('keydown', (e) => {
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   audio.unlock();
 });
-window.addEventListener('pointerdown', () => audio.unlock());
+// iOS only lets audio start from the end of a tap, not its start.
+for (const ev of ['pointerdown', 'pointerup', 'touchend']) window.addEventListener(ev, () => audio.unlock());
+
+setupTouch();
 
 // A different level boss guards the title screen on every load (never the same twice in a row).
 function pickTitleBoss(): number {
