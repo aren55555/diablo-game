@@ -1263,8 +1263,8 @@ summitTheme =
     (Data.levelInfo 11).theme
 
 
-title : Float -> List Bool -> Int -> List Draw
-title time joined startLevel =
+title : Float -> List Bool -> Int -> Int -> List Draw
+title time joined startLevel bossN =
     let
         slot i on =
             let
@@ -1300,7 +1300,7 @@ title time joined startLevel =
     in
     background summitTheme 11 -210 time
         ++ weather Ember time
-        ++ [ Spr "dragon_title" (gameW / 2 + 90) (126 + sin (time * 1.5) * 4) BottomCenter True False 1 ]
+        ++ titleBoss bossN time
         ++ label "MOUNT" 24 26 "#fcd000" Left 3
         ++ label "DIABLO" 24 50 "#fc3c3c" Left 4
         ++ label "A 4-PLAYER CLIMBING ADVENTURE" 26 86 "#fcfcfc" Left 1
@@ -1335,6 +1335,22 @@ title time joined startLevel =
             else
                 label "PRESS YOUR JUMP KEY TO JOIN" (gameW / 2) 226 "#fcfcfc" Mid 1
            )
+
+
+{-| The boss of level n posing on the title screen (picked at random per page load).
+Diablo is big enough as-is; everyone else is drawn at double size to match.
+-}
+titleBoss : Int -> Float -> List Draw
+titleBoss n time =
+    let
+        y =
+            126 + sin (time * 1.5) * 4
+    in
+    if n == 11 then
+        [ Spr "dragon_title" (gameW / 2 + 90) y BottomCenter True False 1 ]
+
+    else
+        [ Spr ((Data.bossFor n).sprite ++ "_2") (gameW / 2 + 90) y BottomCenter True False 2 ]
 
 
 story : Float -> List Draw

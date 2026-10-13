@@ -57,7 +57,7 @@ interface ElmApp {
 }
 declare global {
   interface Window {
-    Elm: { Main: { init(opts: { node: HTMLElement; flags: { debug: boolean } }): ElmApp } };
+    Elm: { Main: { init(opts: { node: HTMLElement; flags: { debug: boolean; titleBoss: number } }): ElmApp } };
   }
 }
 
@@ -217,11 +217,28 @@ window.addEventListener('keydown', (e) => {
 });
 window.addEventListener('pointerdown', () => audio.unlock());
 
+// A different level boss guards the title screen on every load (never the same twice in a row).
+function pickTitleBoss(): number {
+  const BOSSES = 11;
+  let last = 0;
+  try {
+    last = Number(localStorage.getItem('titleBoss')) || 0;
+  } catch {}
+  // Draw from the bosses other than last time's, skipping over it.
+  const pool = last >= 1 && last <= BOSSES ? BOSSES - 1 : BOSSES;
+  let n = 1 + Math.floor(Math.random() * pool);
+  if (pool < BOSSES && n >= last) n++;
+  try {
+    localStorage.setItem('titleBoss', String(n));
+  } catch {}
+  return n;
+}
+
 const mount = document.getElementById('elm');
 if (!mount) throw new Error('missing #elm mount node');
 const app = window.Elm.Main.init({
   node: mount,
-  flags: { debug: new URLSearchParams(window.location.search).has('debug') },
+  flags: { debug: new URLSearchParams(window.location.search).has('debug'), titleBoss: pickTitleBoss() },
 });
 
 app.ports.sprites.subscribe((sheet) => {

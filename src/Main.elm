@@ -24,7 +24,7 @@ import World
 
 
 type alias Flags =
-    { debug : Bool }
+    { debug : Bool, titleBoss : Int }
 
 
 main : Program Flags Model Msg
@@ -73,6 +73,7 @@ type alias Model =
     , music : String
     , tauntIdx : Int
     , startLevel : Int
+    , titleBoss : Int
     , debug : Bool
     , picks : List Int
     , ready : List Bool
@@ -103,6 +104,7 @@ init flags =
       , music = ""
       , tauntIdx = 0
       , startLevel = 1
+      , titleBoss = clamp 1 11 flags.titleBoss
       , debug = flags.debug
       , picks = [ 0, 3, 6, 9 ]
       , ready = [ False, False, False, False ]
@@ -451,7 +453,7 @@ view : Model -> ( List Render.Draw, List String, String )
 view model =
     case model.screen of
         Title ->
-            ( Render.title model.time model.joined model.startLevel, [], "title" )
+            ( Render.title model.time model.joined model.startLevel model.titleBoss, [], "title" )
 
         Select ->
             ( Render.characterSelect model.time model.joined model.picks model.ready, [], "title" )
