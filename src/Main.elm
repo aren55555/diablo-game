@@ -513,8 +513,15 @@ levelKey n =
         "Digit" ++ String.fromInt n
 
 
+{-| One player's slot on the select screen: joined?, character index, locked in?
+-}
+type alias Slot =
+    ( Bool, Int, Bool )
+
+
 {-| Each joined player picks a character: left/right to browse, down to lock
-in, up to change their mind. Once everyone is ready the game starts.
+in, up to change their mind. A locked-in character can't be picked by anyone
+else. Once everyone is ready the game starts.
 -}
 stepSelect : Float -> Bool -> (Int -> Pad) -> Model -> ( Model, List String )
 stepSelect dt startP padAt model =
@@ -525,48 +532,139 @@ stepSelect dt startP padAt model =
         voice i =
             "voice_" ++ (Data.characterInfo (Data.characterAt i)).key
 
-        stepOne i ( ( on, pick ), isReady ) =
+        setAt i s slots =
+            List.indexedMap
+                (\j x ->
+                    if j == i then
+                        s
+
+                    else
+                        x
+                )
+                slots
+
+        -- characters locked in by everyone except player i
+        lockedExcept i slots =
+            slots
+                |> List.indexedMap Tuple.pair
+                |> List.filterMap
+                    (\( j, ( on, pick, isReady ) ) ->
+                        if j /= i && on && isReady then
+                            Just pick
+
+                        else
+                            Nothing
+                    )
+
+        -- the first character from `start` (stepping by dir) that nobody has locked
+        nextFree dir start taken =
             let
-                p =
-                    padAt i
+                go k pick =
+                    if k >= count || not (List.member pick taken) then
+                        pick
+
+                    else
+                        go (k + 1) (modBy count (pick + dir))
             in
-            if not on then
-                ( ( pick, False ), [] )
+            go 0 (modBy count start)
 
-            else if isReady then
-                if p.upP then
-                    ( ( pick, False ), [ "select" ] )
+        stepOne i ( slots, sounds ) =
+            case listGet i slots of
+                Just ( True, pick, isReady ) ->
+                    let
+                        p =
+                            padAt i
 
-                else
-                    ( ( pick, True ), [] )
+                        taken =
+                            lockedExcept i slots
+                    in
+                    if isReady then
+                        if p.upP then
+                            ( setAt i ( True, pick, False ) slots, sounds ++ [ "select" ] )
 
-            else if p.downP then
-                ( ( pick, True ), [ voice pick, "pickup" ] )
+                        else
+                            ( slots, sounds )
 
-            else if p.leftP then
-                ( ( modBy count (pick - 1), False ), [ voice (pick - 1) ] )
+                    else if p.downP then
+                        if List.member pick taken then
+                            ( slots, sounds ++ [ "hurt" ] )
 
-            else if p.rightP then
-                ( ( modBy count (pick + 1), False ), [ voice (pick + 1) ] )
+                        else
+                            ( setAt i ( True, pick, True ) slots, sounds ++ [ voice pick, "pickup" ] )
 
-            else
-                ( ( pick, False ), [] )
+                    else if p.leftP then
+                        let
+                            np =
+                                nextFree -1 (pick - 1) taken
+                        in
+                        ( setAt i ( True, np, False ) slots, sounds ++ [ voice np ] )
 
-        results =
-            List.indexedMap stepOne
-                (List.map2 Tuple.pair (List.map2 Tuple.pair model.joined model.picks) model.ready)
+                    else if p.rightP then
+                        let
+                            np =
+                                nextFree 1 (pick + 1) taken
+                        in
+                        ( setAt i ( True, np, False ) slots, sounds ++ [ voice np ] )
 
-        picks =
-            List.map (Tuple.first >> Tuple.first) results
+                    else
+                        ( slots, sounds )
 
-        ready =
-            List.map (Tuple.first >> Tuple.second) results
+                _ ->
+                    ( slots, sounds )
 
-        sounds =
-            List.concatMap Tuple.second results
+        -- anyone browsing a character that just got locked is bumped to a free one
+        bump slots =
+            List.foldl
+                (\i acc ->
+                    case listGet i acc of
+                        Just ( True, pick, False ) ->
+                            let
+                                taken =
+                                    lockedExcept i acc
+                            in
+                            if List.member pick taken then
+                                setAt i ( True, nextFree 1 pick taken, False ) acc
+
+                            else
+                                acc
+
+                        _ ->
+                            acc
+                )
+                slots
+                (List.range 0 3)
+
+        -- Enter starts right away: lock everyone in on a free character
+        lockAll slots =
+            List.foldl
+                (\i acc ->
+                    case listGet i acc of
+                        Just ( True, pick, False ) ->
+                            setAt i ( True, nextFree 1 pick (lockedExcept i acc), True ) acc
+
+                        _ ->
+                            acc
+                )
+                slots
+                (List.range 0 3)
+
+        initial =
+            List.map3 (\on pick isReady -> ( on, pick, isReady )) model.joined model.picks model.ready
+
+        ( stepped, selectSounds ) =
+            List.foldl stepOne ( initial, [] ) (List.range 0 3)
+
+        slots1 =
+            bump stepped
+
+        picksOf =
+            List.map (\( _, pick, _ ) -> pick)
+
+        readyOf =
+            List.map (\( _, _, isReady ) -> isReady)
 
         everyoneReady =
-            List.all identity (List.map2 (\on r -> not on || r) model.joined ready)
+            List.all (\( on, _, isReady ) -> not on || isReady) slots1
 
         readyT =
             if everyoneReady then
@@ -576,7 +674,11 @@ stepSelect dt startP padAt model =
                 0
     in
     if (model.screenT > 0.3 && startP) || readyT > 0.8 then
-        ( goto Story { model | picks = picks, ready = List.map2 (||) ready model.joined, readyT = 0 }, sounds ++ [ "select" ] )
+        let
+            final =
+                lockAll slots1
+        in
+        ( goto Story { model | picks = picksOf final, ready = readyOf final, readyT = 0 }, selectSounds ++ [ "select" ] )
 
     else
-        ( { model | picks = picks, ready = ready, readyT = readyT }, sounds )
+        ( { model | picks = picksOf slots1, ready = readyOf slots1, readyT = readyT }, selectSounds )

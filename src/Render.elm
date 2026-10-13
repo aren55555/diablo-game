@@ -1534,6 +1534,14 @@ characterSelect time joined picks ready =
         iconX i =
             toFloat i * 31 + 22
 
+        -- which player (if any) has locked in character i
+        owner i =
+            List.map3 (\on pick isReady -> on && isReady && pick == i) joined picks ready
+                |> List.indexedMap Tuple.pair
+                |> List.filter Tuple.second
+                |> List.head
+                |> Maybe.map Tuple.first
+
         strip =
             List.concat
                 (List.indexedMap
@@ -1541,6 +1549,15 @@ characterSelect time joined picks ready =
                         [ Rect (iconX i - 13) 30 26 26 "#101018"
                         , Spr ("c_" ++ (Data.characterInfo c).key ++ "_idle") (iconX i) 53 BottomCenter False False 1
                         ]
+                            ++ (case owner i of
+                                    -- taken: dim it and tag it with the owner's player number
+                                    Just j ->
+                                        [ Alpha 0.65, Rect (iconX i - 13) 30 26 26 "#101018", Alpha 1 ]
+                                            ++ label (Data.playerDef j).name (iconX i) 39 (Data.playerDef j).color Mid 1
+
+                                    Nothing ->
+                                        []
+                               )
                     )
                     chars
                 )
