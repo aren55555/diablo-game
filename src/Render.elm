@@ -438,8 +438,8 @@ modFloat a m =
 -- WORLD ------------------------------------------------------------------------
 
 
-world : Bool -> World -> List Draw
-world paused w =
+world : Bool -> Bool -> World -> List Draw
+world paused muted w =
     let
         shakeX =
             (rnd w.tick - 0.5) * w.shake
@@ -487,10 +487,7 @@ world paused w =
                 bannerDraw w.banner
            )
         ++ (if paused then
-                [ Alpha 0.6, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
-                    ++ label "PAUSED" (gameW / 2) 100 "#fcfcfc" Mid 2
-                    ++ label "PRESS ESC TO KEEP CLIMBING" (gameW / 2) 124 "#bcbcc4" Mid 1
-                    ++ label "M = MUTE" (gameW / 2) 136 "#bcbcc4" Mid 1
+                pauseScreen muted w.players
 
             else
                 []
@@ -1439,7 +1436,7 @@ interlude time nextN taunt players =
 
 gameOver : Float -> World -> List Draw
 gameOver time w =
-    world False w
+    world False False w
         ++ [ Alpha 0.75, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
         ++ label "OH NO!" (gameW / 2) 30 "#fc3c3c" Mid 3
         ++ [ Spr "king_portrait" (gameW / 2) (126 + sin (time * 10) * 2) BottomCenter False False 1 ]
@@ -1750,3 +1747,54 @@ electric time =
                 []
     in
     List.concatMap trace (List.range 0 11) ++ zap
+
+
+{-| The pause menu: each player's character and controls, plus the sound toggle.
+-}
+pauseScreen : Bool -> List Player -> List Draw
+pauseScreen muted players =
+    let
+        count =
+            List.length players
+
+        startX =
+            gameW / 2 - (toFloat count * 92 - 10) / 2
+
+        panel i p =
+            let
+                def =
+                    Data.playerDef p.idx
+
+                info =
+                    Data.characterInfo p.character
+
+                x =
+                    startX + toFloat i * 92
+
+                y =
+                    46
+
+                row n name key =
+                    [ Text name (x + 5) (y + 74 + toFloat n * 11) "#7c7c84" Left 1
+                    , Text key (x + 77) (y + 74 + toFloat n * 11) "#fcfcfc" Right 1
+                    ]
+            in
+            [ Rect x y 82 122 "#101018", Rect x y 82 2 def.color, Text def.name (x + 41) (y + 5) def.color Mid 1 ]
+                ++ [ Spr ("c_" ++ info.key ++ "_idle") (x + 41) (y + 50) BottomCenter False False 2 ]
+                ++ label info.name (x + 41) (y + 56) "#fcfcfc" Mid 1
+                ++ row 0 "JUMP" def.jump
+                ++ row 1 "LEFT" def.left
+                ++ row 2 "RIGHT" def.right
+                ++ row 3 "ATTACK" def.atk
+    in
+    [ Alpha 0.75, Rect 0 0 gameW gameH "#101018", Alpha 1 ]
+        ++ label "PAUSED" (gameW / 2) 24 "#fcfcfc" Mid 2
+        ++ List.concat (List.indexedMap panel players)
+        ++ label "M = SOUND:" (gameW / 2 - 18) 180 "#bcbcc4" Mid 1
+        ++ (if muted then
+                label "OFF" (gameW / 2 + 42) 180 "#fc3c3c" Mid 1
+
+            else
+                label "ON" (gameW / 2 + 39) 180 "#58d854" Mid 1
+           )
+        ++ label "ESC = KEEP CLIMBING" (gameW / 2) 196 "#fcd000" Mid 1

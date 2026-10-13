@@ -460,7 +460,7 @@ view model =
             ( Render.story model.time, [], "title" )
 
         Playing w paused ->
-            ( Render.world paused w
+            ( Render.world paused model.muted w
             , w.sfx
             , case w.phase of
                 Climb ->

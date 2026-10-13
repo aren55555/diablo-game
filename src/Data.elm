@@ -24,23 +24,23 @@ import Util exposing (listGet)
 
 
 type alias PlayerDef =
-    { name : String, color : String, dark : String, keys : String, jump : String, atk : String }
+    { name : String, color : String, dark : String, keys : String, jump : String, atk : String, left : String, right : String }
 
 
 playerDef : Int -> PlayerDef
 playerDef i =
     case i of
         0 ->
-            { name = "P1", color = "#e83c3c", dark = "#8c1c1c", keys = "W A S D", jump = "W", atk = "S" }
+            { name = "P1", color = "#e83c3c", dark = "#8c1c1c", keys = "W A S D", jump = "W", atk = "S", left = "A", right = "D" }
 
         1 ->
-            { name = "P2", color = "#3c8cf8", dark = "#1c3c9c", keys = "ARROWS", jump = "UP", atk = "DOWN" }
+            { name = "P2", color = "#3c8cf8", dark = "#1c3c9c", keys = "ARROWS", jump = "UP", atk = "DOWN", left = "LEFT", right = "RIGHT" }
 
         2 ->
-            { name = "P3", color = "#3cd860", dark = "#1c7c30", keys = "T F G H", jump = "T", atk = "G" }
+            { name = "P3", color = "#3cd860", dark = "#1c7c30", keys = "T F G H", jump = "T", atk = "G", left = "F", right = "H" }
 
         _ ->
-            { name = "P4", color = "#f8c818", dark = "#a06c00", keys = "I J K L", jump = "I", atk = "K" }
+            { name = "P4", color = "#f8c818", dark = "#a06c00", keys = "I J K L", jump = "I", atk = "K", left = "J", right = "L" }
 
 
 type alias WeaponDef =
