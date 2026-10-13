@@ -74,8 +74,7 @@ const ctx: CanvasRenderingContext2D = ctxOrNull;
 ctx.imageSmoothingEnabled = false;
 
 function fit(): void {
-  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
-  const scale = s >= 1 ? Math.floor(s) : s;
+  const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
   canvas.style.width = `${W * scale}px`;
   canvas.style.height = `${H * scale}px`;
 }
