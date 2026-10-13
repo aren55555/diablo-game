@@ -362,3 +362,9 @@ specName s =
 
         BreathA Poison ->
             "poison"
+
+        ThrowCash _ ->
+            "cash"
+
+        Jet _ ->
+            "jet"

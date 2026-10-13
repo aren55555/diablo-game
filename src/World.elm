@@ -1529,6 +1529,9 @@ updateItems dt w =
                 ( Diamond, Just p ) ->
                     ( acc |> mapPlayer p.idx (\q -> { q | diamonds = q.diamonds + 1 }) |> sfx "diamond" |> floatText (pcx p) (p.y - 6) "DIAMOND!" "#00e8d8", True )
 
+                ( Cash, Just p ) ->
+                    ( acc |> mapPlayer p.idx (\q -> { q | gold = q.gold + 5 }) |> sfx "cash" |> floatText (pcx p) (p.y - 6) "+5" "#58d854", True )
+
                 ( Heart, Just p ) ->
                     if p.hp < 100 then
                         ( acc |> mapPlayer p.idx (\q -> { q | hp = min 100 (q.hp + 25) }) |> sfx "heart" |> floatText (pcx p) (p.y - 6) "+25" "#fc7460", True )

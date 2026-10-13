@@ -182,6 +182,70 @@ background theme seed camY time =
         climbed =
             -(camY + 210)
 
+        -- pastel art-deco hotels (the beach level)
+        hotels parallax base amp s =
+            List.concatMap
+                (\i ->
+                    let
+                        x =
+                            toFloat i * 28
+
+                        h =
+                            toFloat (round (amp * (0.35 + 0.65 * rnd (s + i))))
+
+                        top =
+                            toFloat (round (base + climbed * parallax - h))
+
+                        color =
+                            Maybe.withDefault "#f8b8d8" (listGet (modBy 4 (i + s)) [ "#f8b8d8", "#a4e4fc", "#fce4a0", "#c4f0c8" ])
+
+                        windows j =
+                            List.map (\k -> Rect (x + 3 + toFloat k * 5) (top + 5 + toFloat j * 6) 3 2 "#fcfcfc") (List.range 0 3)
+                    in
+                    Rect x top 22 (gameH - top + 1) color
+                        :: Rect (x + 6) (top - 3) 10 3 color
+                        :: List.concatMap windows (List.range 0 (floor (h / 6) - 2))
+                )
+                (List.range 0 (ceiling (gameW / 28)))
+
+        -- the ocean with rolling wave highlights
+        ocean base =
+            let
+                top =
+                    toFloat (round (base + climbed * 0.05))
+            in
+            Rect 0 top gameW (gameH - top + 1) "#1c8cd8"
+                :: List.map (\i -> Rect (modFloat (time * 10 + toFloat i * 47) gameW) (top + 3 + toFloat (modBy 5 i) * 5) 8 1 "#a4e4fc") (List.range 0 11)
+
+        -- palm tree silhouettes along the shore
+        palmRow color base s =
+            List.concatMap
+                (\i ->
+                    let
+                        x =
+                            toFloat i * 64 + rnd (s + i) * 30
+
+                        foot =
+                            toFloat (round (base + climbed * 0.08))
+
+                        trunk j =
+                            Rect (x + toFloat (j // 3)) (foot - toFloat j * 4 - 4) 3 4 color
+
+                        crown =
+                            foot - 40
+                    in
+                    Rect 0 foot gameW (gameH - foot + 1) color
+                        :: List.map trunk (List.range 0 9)
+                        ++ [ Rect (x - 8) crown 22 3 color
+                           , Rect (x - 12) (crown + 3) 6 2 color
+                           , Rect (x + 10) (crown + 3) 6 2 color
+                           , Rect (x - 3) (crown - 3) 12 3 color
+                           , Rect (x - 14) (crown + 5) 3 2 color
+                           , Rect (x + 15) (crown + 5) 3 2 color
+                           ]
+                )
+                (List.range 0 6)
+
         -- server towers with blinking LEDs (the circuit level)
         towers color parallax base amp s =
             List.concatMap
@@ -256,6 +320,9 @@ background theme seed camY time =
         ++ (if theme.deco == Circuit then
                 towers theme.far 0.03 175 80 (seed * 7) ++ towers theme.near 0.08 220 46 (seed * 13 + 5)
 
+            else if theme.deco == Palms then
+                hotels 0.03 170 70 (seed * 7) ++ ocean 178 ++ palmRow theme.near 222 (seed * 13 + 5)
+
             else
                 hills theme.far "#fcfcfc" 0.03 170 90 6 (seed * 7) ++ hills theme.near theme.near 0.08 215 50 8 (seed * 13 + 5)
            )
@@ -306,6 +373,33 @@ weather fx time =
 
         Electric ->
             electric time
+
+        Seagulls ->
+            List.concatMap
+                (\i ->
+                    let
+                        s =
+                            i * 13
+
+                        x =
+                            modFloat (rnd (s + 1) * gameW + time * (20 + 15 * rnd s)) (gameW + 30) - 15
+
+                        y =
+                            toFloat (round (30 + rnd (s + 2) * 80 + sin (time * 2 + toFloat i) * 4))
+
+                        up =
+                            modBy 2 (floor (time * 4 + toFloat i)) == 0
+
+                        ( wingY, bodyY ) =
+                            if up then
+                                ( y, y + 1 )
+
+                            else
+                                ( y + 1, y )
+                    in
+                    [ Rect x wingY 2 1 "#fcfcfc", Rect (x + 2) bodyY 1 1 "#fcfcfc", Rect (x + 3) wingY 2 1 "#fcfcfc" ]
+                )
+                (List.range 0 5)
 
         Sandstorm ->
             -- blowing sand streaks
@@ -527,6 +621,37 @@ deco d x y w id =
                     )
                 :: List.map (\i -> Rect (x + 2 + toFloat i * 4) (y + 6) 2 2 "#d8b030") (List.range 0 (floor ((w - 4) / 4)))
 
+        Palms ->
+            -- boardwalk planks, plus a palm tree or a beach umbrella
+            List.map (\i -> Rect (x + 6 + toFloat i * 8) (y + 2) 1 3 "#8c5c2c") (List.range 0 (floor ((w - 8) / 8)))
+                ++ (let
+                        px =
+                            toFloat (round (x + 6 + rnd (id * 13) * (w - 14)))
+
+                        r =
+                            rnd (id * 7)
+                    in
+                    if r < 0.35 then
+                        [ Rect px (y - 6) 2 6 "#a0582c"
+                        , Rect (px + 1) (y - 12) 2 6 "#a0582c"
+                        , Rect (px - 3) (y - 14) 10 2 "#3cb04c"
+                        , Rect (px - 5) (y - 12) 3 2 "#3cb04c"
+                        , Rect (px + 7) (y - 12) 3 2 "#3cb04c"
+                        , Rect px (y - 12) 1 1 "#6c4420"
+                        , Rect (px + 3) (y - 12) 1 1 "#6c4420"
+                        ]
+
+                    else if r < 0.6 then
+                        [ Rect px (y - 10) 1 10 "#fcfcfc"
+                        , Rect (px - 5) (y - 12) 11 2 "#fc3c3c"
+                        , Rect (px - 3) (y - 13) 7 1 "#fc3c3c"
+                        , Rect (px - 1) (y - 13) 3 3 "#fcfcfc"
+                        ]
+
+                    else
+                        []
+                   )
+
         Cactus ->
             Rect x (y + 3) w 1 "#c08840"
                 :: (if rnd (id * 7) < 0.5 then
@@ -610,6 +735,9 @@ item time sx sy it =
             Heart ->
                 [ Spr "i_heart" x y TopLeft False False 1 ]
 
+            Cash ->
+                [ Spr "i_cash" x y TopLeft False False 1 ]
+
             WeaponItem wp ->
                 let
                     glow =
@@ -645,6 +773,9 @@ enemy sx sy e =
 
                 Archer ->
                     "e_archer_"
+
+                Bodyguard ->
+                    "e_guard_"
 
         cx =
             sx (e.x + e.w / 2)
@@ -731,8 +862,25 @@ boss w sx sy b =
 
             else
                 []
+
+        jet =
+            case b.atk of
+                Just a ->
+                    case a.spec of
+                        Jet _ ->
+                            if a.stage == 1 then
+                                [ Spr "x_jet" (sx a.tx) 30 Center (a.ty < 0) False 1 ]
+
+                            else
+                                []
+
+                        _ ->
+                            []
+
+                Nothing ->
+                    []
     in
-    sprite ++ beamDraws ++ zzz ++ quote
+    sprite ++ beamDraws ++ zzz ++ quote ++ jet
 
 
 player : World -> (Float -> Float) -> (Float -> Float) -> Player -> List Draw
@@ -960,6 +1108,9 @@ projectile w sx sy p =
 
                 Spark ->
                     spr "x_spark"
+
+                Crate ->
+                    spr "x_crate"
            )
 
 

@@ -353,6 +353,8 @@ export class Audio {
       case 'select': this.tone(660, 0.08, 'square', 0.07); this.tone(990, 0.1, 'square', 0.07, null, 0.08); break;
       case 'shoot': this.tone(600, 0.12, 'square', 0.05, 300); break;
       case 'crumble': this.noise(0.4, 0.15, 800, 200); break;
+      case 'cash': this.tone(1568, 0.06, 'square', 0.05); this.tone(2093, 0.18, 'square', 0.05, null, 0.06); this.noise(0.08, 0.1, 6000, 2000); break;
+      case 'jet': this.noise(2.2, 0.18, 400, 2500); this.tone(220, 2.2, 'sawtooth', 0.025, 110); break;
       case 'win': this.seq([72, 76, 79, 84, 88, 91, 96], 0.3, 'square', 0.08, 0.13); break;
     }
   }
