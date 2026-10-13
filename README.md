@@ -3,6 +3,9 @@
 A 4-player local co-op climbing game, written in Elm with a TypeScript
 platform layer.
 
+**Play it: https://diablo.arenpatel.com/** (deployed from `main`
+by `.github/workflows/pages.yml`)
+
 ## Prerequisites
 
 Install [mise](https://mise.jdx.dev) and [just](https://just.systems). mise
