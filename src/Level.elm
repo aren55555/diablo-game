@@ -189,8 +189,11 @@ generate n numPlayers =
         arena =
             { id = gBridge.nextId, x = 0, y = arenaY, w = gameW, h = 26, kind = Arena, moving = Nothing, crumble = False, ct = -1, gone = False, respawnT = 0, dx = 0, ice = False }
 
+        -- keep every climbing platform clear of the arena slab (drawn 30px deep)
+        -- so none can hide behind it
         climbPlats =
             List.reverse gBridge.plats
+                |> List.map (\p -> { p | y = max p.y (arenaY + arenaClearance) })
 
         platforms =
             ground :: climbPlats ++ [ arena ]
@@ -345,3 +348,10 @@ placeEnemies n plats arenaY startId =
                 (List.range 0 (babies - 1))
     in
     ( flyers ++ ground, id1 + babies )
+
+
+{-| Minimum distance from the arena surface down to any climbing platform.
+-}
+arenaClearance : Float
+arenaClearance =
+    42

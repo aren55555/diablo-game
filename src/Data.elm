@@ -81,6 +81,11 @@ meadow =
     { sky = [ "#3cbcfc", "#5cc8fc", "#7cd4fc", "#a4e4fc", "#c4f0fc" ], far = "#78a8b8", near = "#38884c", top = "#58d854", body = "#a0582c", edge = "#503000", fx = NoFx, deco = Grass, ice = False, stars = False }
 
 
+sand : Theme
+sand =
+    { sky = [ "#e87818", "#f89c38", "#fcbc58", "#fcd890", "#fcecc0" ], far = "#e0a868", near = "#c8843c", top = "#f8d878", body = "#d0a050", edge = "#805020", fx = Sandstorm, deco = Cactus, ice = False, stars = False }
+
+
 rocky : Theme
 rocky =
     { sky = [ "#e45c10", "#f87838", "#fc9c58", "#fcbc80", "#fce0a8" ], far = "#b88c70", near = "#7c5c4c", top = "#bcbcbc", body = "#7c6c64", edge = "#3c302c", fx = NoFx, deco = Stone, ice = False, stars = False }
@@ -94,6 +99,11 @@ cave =
 snow : Theme
 snow =
     { sky = [ "#6c88b8", "#8ca4cc", "#acc0dc", "#ccdcec", "#ecf4fc" ], far = "#c4d4e8", near = "#8ca0bc", top = "#fcfcfc", body = "#8ca4bc", edge = "#4c6078", fx = Snow, deco = SnowCap, ice = True, stars = False }
+
+
+circuit : Theme
+circuit =
+    { sky = [ "#020818", "#041030", "#082048", "#0c3060", "#104070" ], far = "#0c2848", near = "#081a30", top = "#5c6878", body = "#20242c", edge = "#101418", fx = Electric, deco = Circuit, ice = False, stars = False }
 
 
 bone : Theme
@@ -140,7 +150,7 @@ levelInfo n =
             { name = "BABY DRAGON NESTS", theme = meadow, weapons = [ Nunchucks, FartBomb, Sword ] }
 
         3 ->
-            { name = "ROCKY LEDGES", theme = rocky, weapons = [ Sword, FartBomb, MachineGun, Nunchucks ] }
+            { name = "SANDSTONE LEDGES", theme = sand, weapons = [ Sword, FartBomb, MachineGun, Nunchucks ] }
 
         4 ->
             { name = "BAT CAVES", theme = cave, weapons = [ MachineGun, Sword, FartBomb, Nunchucks ] }
@@ -152,7 +162,7 @@ levelInfo n =
             { name = "FROSTY CLIFFS", theme = snow, weapons = [ Bazooka, Sword, MachineGun, FartBomb ] }
 
         7 ->
-            { name = "BONE RIDGE", theme = bone, weapons = [ Laser, Bazooka, FartBomb, MachineGun ] }
+            { name = "CIRCUIT CITADEL", theme = circuit, weapons = [ Laser, Bazooka, FartBomb, MachineGun ] }
 
         8 ->
             { name = "LAVA STEPS", theme = lava, weapons = [ Laser, MachineGun, Bazooka, Sword ] }
@@ -247,14 +257,19 @@ bossDefs =
         "b_yeti"
         [ Stomp, Shoot Snowball 5 0.5 168 True, Charge, Rain Icicle 10 ]
         [ "BRRRRAAAH!", "CHILL OUT!" ]
-    , boss "SIR RATTLEBONES"
-        "THE SKELETON KNIGHT"
-        1400
-        ( 26, 44 )
-        44
-        "b_skelly"
-        [ Charge, Shoot Arrow 5 0.3 216 False, Summon Archer 2, Radial Bone 8 120 ]
-        [ "RATTLE RATTLE!", "I HAVE A BONE TO PICK!" ]
+    , let
+        b =
+            boss "CRYPTO CHAD"
+                "TECH BRO AND SERIAL FOUNDER"
+                1400
+                ( 30, 44 )
+                48
+                "b_crypto"
+                [ Charge, LaserA 2, Rain BitcoinP 12, Shoot Rocket 3 0.4 180 False, Radial BitcoinP 10 120 ]
+                [ "I'M RAISING VC!", "BTC TO THE MOON!", "HAVE FUN STAYING POOR!", "WAGMI!", "IT'S NOT A BUBBLE!", "DIAMOND HANDS!", "MY AI WROTE THIS TAUNT!" ]
+      in
+      -- laser eyes come out of both lenses of his shades
+      { b | eyes = [ ( 6, -35 ), ( 1, -35 ) ] }
     , let
         b =
             boss "MAGMA SALAMANDER"

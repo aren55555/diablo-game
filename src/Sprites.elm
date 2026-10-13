@@ -276,6 +276,7 @@ projectiles =
     , sprite "x_fart" (new 8 8 |> ellipse 4 4 3 3 'L' |> dot 3 3 'l' |> dot 4 0 'b' |> outline 'M')
     , sprite "x_magic" (new 9 9 |> line 4 0 4 8 'v' |> line 0 4 8 4 'v' |> ellipse 4.5 4.5 2 2 'c' |> dot 4 4 'w')
     , sprite "x_wave" (new 12 10 |> poly [ ( 0, 10 ), ( 4, 2 ), ( 8, 0 ), ( 12, 10 ) ] 'G' |> poly [ ( 3, 10 ), ( 6, 4 ), ( 9, 10 ) ] 'g' |> outline 'D')
+    , sprite "x_spark" (new 7 11 |> line 4 0 1 5 'f' |> line 1 5 5 5 'f' |> line 5 5 2 10 'f' |> line 3 1 2 4 'w' |> line 4 6 3 8 'w' |> outline 'c')
     ]
 
 
@@ -503,33 +504,59 @@ yeti f =
         |> outline 'k'
 
 
-skelly : Int -> Canvas
-skelly f =
-    new 36 50
-        |> rect 11 38 2 11 'w'
-        |> rect 19 38 2 11 'w'
-        |> rect 9 47 5 2 'D'
-        |> rect 18 47 5 2 'D'
-        |> poly [ ( 6, 18 ), ( 2, 40 ), ( 14, 36 ) ] 'R'
-        |> rect 9 17 14 14 'D'
-        |> hline 11 20 10 'w'
-        |> hline 11 23 10 'w'
-        |> hline 11 26 10 'w'
-        |> rect 15 18 2 12 'G'
-        |> rect 10 31 12 7 'D'
-        |> ellipse 16 9 7 7 'w'
-        |> rect 16 7 3 3 'k'
-        |> rect 21 7 2 3 'k'
-        |> dot 17 8 'r'
-        |> hline 16 14 6 'k'
-        |> rect 10 1 12 4 'D'
-        |> rect 15 0 2 2 'r'
+{-| Crypto Chad, tech bro: hoodie, slick hair, shades (laser eyes when
+attacking), phone with an "up only" chart and an energy drink.
+-}
+cryptoBro : Int -> Canvas
+cryptoBro f =
+    new 36 46
+        |> rect 12 34 5 9 'E'
+        |> rect 19 34 5 9 'E'
+        |> rect
+            (if f == 1 then
+                10
+
+             else
+                11
+            )
+            42
+            7
+            3
+            'w'
+        |> rect 19 42 7 3 'w'
+        |> ellipse 18 27 10 9 'g'
+        |> rect 9 24 18 11 'g'
+        |> line 18 20 18 34 'G'
+        |> hline 12 31 12 'D'
+        |> dot 22 24 'F'
+        |> ellipse 18 14 9 8 'g'
+        |> ellipse 19 12 7 7 's'
+        |> rect 12 4 14 4 'b'
+        |> poly [ ( 12, 6 ), ( 28, 3 ), ( 26, 8 ) ] 'b'
+        |> hline 15 10 12 'k'
+        |> rect 17 10 5 3 'k'
+        |> rect 23 10 4 3 'k'
         |> (if f == 2 then
-                rect 23 20 4 2 'w' >> hline 26 21 10 'G' >> rect 25 19 1 5 'Y'
+                rect 18 11 3 1 'r' >> rect 24 11 2 1 'r'
 
             else
-                rect 23 20 2 7 'w' >> rect 24 4 2 22 'G' >> rect 22 26 6 1 'Y'
+                dot 18 10 'G' >> dot 24 10 'G'
            )
+        |> (if f == 2 then
+                rect 21 16 4 2 'k' >> hline 21 16 4 'w'
+
+            else
+                hline 21 16 4 'R' >> dot 25 15 'R'
+           )
+        |> (if f == 2 then
+                ellipse 30 14 3 5 'g' >> rect 28 3 6 9 'D' >> line 29 10 33 5 'L' >> dot 33 5 'l'
+
+            else
+                ellipse 29 28 3 6 'g' >> rect 28 31 6 8 'D' >> line 29 37 33 32 'L'
+           )
+        |> ellipse 7 28 3 6 'g'
+        |> rect 4 29 3 6 'l'
+        |> hline 4 29 3 'G'
         |> outline 'k'
 
 
@@ -747,7 +774,7 @@ bosses =
         ++ frames "b_bat" bat
         ++ frames "b_troll" troll
         ++ frames "b_yeti" yeti
-        ++ frames "b_skelly" skelly
+        ++ frames "b_crypto" cryptoBro
         ++ frames "b_sala" sala
         ++ frames "b_cyclops" cyclops
         ++ frames "b_king" king

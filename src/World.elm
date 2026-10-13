@@ -1581,7 +1581,26 @@ hazards dt w =
 
         w1 =
             List.foldl
-                (\wr acc -> spawnProj { shot | kind = Rock, x = wr.x, y = acc.camY - 8, vy = 40, grav = 280, r = 5, dmg = 12 * dmgMul w.level.n, life = 5, floorBreak = True } acc)
+                (\wr acc ->
+                    spawnProj
+                        { shot
+                            | kind =
+                                if w.level.theme.deco == Circuit then
+                                    Spark
+
+                                else
+                                    Rock
+                            , x = wr.x
+                            , y = acc.camY - 8
+                            , vy = 40
+                            , grav = 280
+                            , r = 5
+                            , dmg = 12 * dmgMul w.level.n
+                            , life = 5
+                            , floorBreak = True
+                        }
+                        acc
+                )
                 { w | warnings = waiting }
                 fire
 

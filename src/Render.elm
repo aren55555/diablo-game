@@ -182,6 +182,43 @@ background theme seed camY time =
         climbed =
             -(camY + 210)
 
+        -- server towers with blinking LEDs (the circuit level)
+        towers color parallax base amp s =
+            List.concatMap
+                (\i ->
+                    let
+                        x =
+                            toFloat i * 14
+
+                        h =
+                            toFloat (round (amp * (0.3 + 0.7 * rnd (s + i))))
+
+                        top =
+                            toFloat (round (base + climbed * parallax - h))
+
+                        led j =
+                            if rnd (s + i * 7 + j) < 0.45 then
+                                [ Rect (x + 3 + toFloat (modBy 2 j) * 5)
+                                    (top + 4 + toFloat j * 6)
+                                    2
+                                    1
+                                    (if sin (time * (2 + rnd (s + j)) + toFloat (i + j)) > 0 then
+                                        "#58d854"
+
+                                     else
+                                        "#d82800"
+                                    )
+                                ]
+
+                            else
+                                []
+                    in
+                    Rect x top 12 (gameH - top + 1) color
+                        :: Rect x top 12 1 "#1c4c6c"
+                        :: List.concatMap led (List.range 0 (floor (h / 6) - 1))
+                )
+                (List.range 0 (ceiling (gameW / 14)))
+
         -- jagged mountain range: the max of a few triangular peaks, drawn in 2px columns
         hills color cap parallax base amp peaks s =
             let
@@ -214,7 +251,14 @@ background theme seed camY time =
                 )
                 (List.range 0 (ceiling (gameW / 2)))
     in
-    sky ++ stars ++ hills theme.far "#fcfcfc" 0.03 170 90 6 (seed * 7) ++ hills theme.near theme.near 0.08 215 50 8 (seed * 13 + 5)
+    sky
+        ++ stars
+        ++ (if theme.deco == Circuit then
+                towers theme.far 0.03 175 80 (seed * 7) ++ towers theme.near 0.08 220 46 (seed * 13 + 5)
+
+            else
+                hills theme.far "#fcfcfc" 0.03 170 90 6 (seed * 7) ++ hills theme.near theme.near 0.08 215 50 8 (seed * 13 + 5)
+           )
 
 
 weather : WeatherFx -> Float -> List Draw
@@ -259,6 +303,36 @@ weather fx time =
 
         Sparkle ->
             flakes "#fcd000" 18 10 6 1 True
+
+        Electric ->
+            electric time
+
+        Sandstorm ->
+            -- blowing sand streaks
+            List.map
+                (\i ->
+                    let
+                        s =
+                            i * 11
+
+                        x =
+                            modFloat (rnd s * gameW + time * (90 + 60 * rnd (s + 1))) (gameW + 20) - 10
+
+                        y =
+                            rnd (s + 2) * gameH + sin (time * 2 + toFloat i) * 3
+                    in
+                    Rect x
+                        y
+                        (toFloat (2 + modBy 3 i))
+                        1
+                        (if modBy 2 i == 0 then
+                            "#f8d878"
+
+                         else
+                            "#e0a050"
+                        )
+                )
+                (List.range 0 44)
 
 
 modFloat : Float -> Float -> Float
@@ -387,7 +461,7 @@ platform w sx sy p =
                     ++ List.map (\i -> Rect (x + toFloat i * 24 + 6) (y + 10 + toFloat (modBy 3 i) * 5) 4 2 th.edge) (List.range 0 15)
 
             Arena ->
-                [ Rect x y p.w (p.h + 30) th.edge
+                [ Rect x y p.w (p.h + 4) th.edge
                 , Rect x y p.w 4 top
                 , Rect x (y + 4) p.w 1 "#101018"
                 ]
@@ -437,6 +511,40 @@ deco d x y w id =
 
         Stone ->
             spots "#7c7c84" 1
+
+        Circuit ->
+            -- gold pins under the chip, a pin-1 dot and a status LED
+            Rect (x + 2) (y + 3) 1 1 "#fcfcfc"
+                :: Rect (x + w - 4)
+                    (y + 3)
+                    2
+                    1
+                    (if modBy 2 id == 0 then
+                        "#58d854"
+
+                     else
+                        "#d82800"
+                    )
+                :: List.map (\i -> Rect (x + 2 + toFloat i * 4) (y + 6) 2 2 "#d8b030") (List.range 0 (floor ((w - 4) / 4)))
+
+        Cactus ->
+            Rect x (y + 3) w 1 "#c08840"
+                :: (if rnd (id * 7) < 0.5 then
+                        let
+                            px =
+                                toFloat (round (x + 4 + rnd (id * 13) * (w - 10)))
+                        in
+                        [ Rect px (y - 7) 2 7 "#3c9c3c"
+                        , Rect px (y - 7) 1 7 "#58d854"
+                        , Rect (px - 2) (y - 5) 1 3 "#3c9c3c"
+                        , Rect (px - 2) (y - 3) 2 1 "#3c9c3c"
+                        , Rect (px + 3) (y - 6) 1 3 "#3c9c3c"
+                        , Rect (px + 2) (y - 4) 2 1 "#3c9c3c"
+                        ]
+
+                    else
+                        []
+                   )
 
 
 zone : (Float -> Float) -> (Float -> Float) -> Zone -> List Draw
@@ -849,6 +957,9 @@ projectile w sx sy p =
 
                 Wave ->
                     spr "x_wave"
+
+                Spark ->
+                    spr "x_spark"
            )
 
 
@@ -1404,3 +1515,87 @@ safetyNet w sy =
                 )
                 (List.range 0 (ceiling (gameW / 8)))
             ++ [ Alpha 1 ]
+
+
+{-| Circuit-board traces with electric pulses running along them, plus the
+occasional lightning zap across the sky.
+-}
+electric : Float -> List Draw
+electric time =
+    let
+        trace i =
+            let
+                s =
+                    i * 17
+
+                y =
+                    toFloat (round (20 + rnd s * (gameH - 40)))
+
+                x0 =
+                    toFloat (round (rnd (s + 1) * gameW * 0.7))
+
+                len =
+                    toFloat (round (60 + rnd (s + 2) * 140))
+
+                half =
+                    toFloat (round (len / 2))
+
+                dy =
+                    if rnd (s + 3) < 0.5 then
+                        -12
+
+                    else
+                        12
+
+                k =
+                    modFloat (time * (40 + 30 * rnd (s + 4)) + rnd (s + 5) * 300) (len + 60)
+
+                ( px, py ) =
+                    if k < half then
+                        ( x0 + k, y )
+
+                    else
+                        ( x0 + k, y + dy )
+
+                traceColor =
+                    "#0c3c50"
+            in
+            [ Rect (x0 - 1) (y - 1) 3 3 traceColor
+            , Rect x0 y half 1 traceColor
+            , Rect (x0 + half) (min y (y + dy)) 1 (abs dy) traceColor
+            , Rect (x0 + half) (y + dy) half 1 traceColor
+            , Rect (x0 + len - 1) (y + dy - 1) 3 3 traceColor
+            ]
+                ++ (if k < len then
+                        [ Rect (px - 3) py 3 1 "#007c8c", Rect px py 3 1 "#00e8d8" ]
+
+                    else
+                        []
+                   )
+
+        period =
+            1.7
+
+        cycle =
+            floor (time / period)
+
+        zap =
+            if time - toFloat cycle * period < 0.12 then
+                let
+                    s =
+                        cycle * 31
+
+                    pts =
+                        List.map
+                            (\j -> ( rnd s * gameW + rndRange (s + j) -10 10, 24 + toFloat j * (14 + rnd (s + 1) * 10) ))
+                            (List.range 0 6)
+
+                    segs =
+                        List.map2 Tuple.pair pts (List.drop 1 pts)
+                in
+                List.concatMap (\( ( x1, y1 ), ( x2, y2 ) ) -> [ Line x1 y1 x2 y2 3 "#3cbcfc", Line x1 y1 x2 y2 1 "#fcfcfc" ]) segs
+
+            else
+                []
+    in
+    List.concatMap trace (List.range 0 11) ++ zap

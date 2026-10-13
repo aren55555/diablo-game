@@ -152,6 +152,7 @@ type ProjKind
     | DiamondP
     | BitcoinP
     | Wave
+    | Spark
 
 
 type Owner
@@ -337,6 +338,8 @@ type WeatherFx
     | Ember
     | Dust
     | Sparkle
+    | Sandstorm
+    | Electric
 
 
 type Deco
@@ -346,6 +349,8 @@ type Deco
     | SnowCap
     | Lava
     | GoldTrim
+    | Cactus
+    | Circuit
 
 
 type alias Theme =

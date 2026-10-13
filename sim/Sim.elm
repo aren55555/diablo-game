@@ -234,6 +234,7 @@ run flags =
         , ( "reachable", E.bool (reachable start.level) )
         , ( "feetAboveArena", E.list (\p -> E.int (round (final.level.arenaY - (p.y + 15)))) final.players )
         , ( "enemies", E.int (List.length final.enemies) )
+        , ( "arenaGap", E.float (start.level.platforms |> List.filter (\p -> p.kind == Normal) |> List.map (\p -> p.y - start.level.arenaY) |> List.minimum |> Maybe.withDefault 0) )
         , ( "onScreen", E.bool (List.all (\p -> p.y + 15 <= final.camY + 240) final.players) )
         , ( "damageBy", E.dict identity (\v -> E.int (round v)) damage )
         ]
